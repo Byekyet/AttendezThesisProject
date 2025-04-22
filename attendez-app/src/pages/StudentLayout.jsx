@@ -2,8 +2,6 @@ import React from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   LogOut,
-  Bell,
-  User,
   LayoutDashboard,
   ClipboardList,
   Send,
@@ -55,19 +53,7 @@ const StudentLayout = () => {
 
       {/* Main content */}
       <main className="flex-1 px-6 pt-6 pb-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold capitalize">
-            {location.pathname.replace("/", "") || "Dashboard"}
-          </h2>
-          <div className="flex items-center gap-6">
-            <Bell className="w-5 h-5 text-gray-500" />
-            <User className="w-8 h-8 text-gray-600 border rounded-full p-1" />
-          </div>
-        </div>
-
-        <div className="w-full">
-          <Outlet />
-        </div>
+        <Outlet />
       </main>
     </div>
   );
