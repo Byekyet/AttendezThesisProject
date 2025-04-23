@@ -1,29 +1,42 @@
-import React from "react";
+// src/pages/StudentDashboard.jsx
+
+import React, { useState } from "react";
 import { Bell, User } from "lucide-react";
+import UserProfilePopup from "../components/UserProfilePopup";
+
 
 const StudentDashboard = () => {
+  const [showProfile, setShowProfile] = useState(false);
+
   return (
-    <div className="px-2 pt-0 pb-6">
-      {/* Top header with title and icons */}
+    <div className="relative px-2 pt-0 pb-6 bg-gray-50 min-h-screen">
+      {/* Header with title, bell, and user icon */}
       <div className="flex justify-between items-center mb-8 mt-2">
         <h2 className="text-xl font-semibold">Dashboard</h2>
         <div className="flex items-center gap-4">
           <Bell className="w-5 h-5 text-gray-500" />
-          <User className="w-8 h-8 text-gray-600 border rounded-full p-1" />
+          <button onClick={() => setShowProfile((p) => !p)}>
+            <User className="w-8 h-8 text-gray-600 border rounded-full p-1" />
+          </button>
         </div>
       </div>
 
+      {/* Profile popup */}
+      {showProfile && (
+        <UserProfilePopup onClose={() => setShowProfile(false)} />
+      )}
+
       {/* Course Table */}
       <div className="overflow-x-auto">
-        <table className="min-w-[900px] bg-white shadow-sm table-fixed overflow-hidden rounded-lg">
+        <table className="min-w-[900px] bg-white shadow-lg table-fixed overflow-hidden rounded-lg">
           <thead>
             <tr className="bg-gray-100 text-left text-sm text-gray-600">
               <th className="w-12 px-4 py-3">#</th>
-              <th className="w-32 px-4 py-3">Course code</th>
-              <th className="w-64 px-4 py-3">Course name</th>
-              <th className="w-24 px-4 py-3">Classroom</th>
-              <th className="w-24 px-4 py-3">Attended</th>
-              <th className="w-24 px-4 py-3 rounded-tr-lg">Absent</th>
+              <th className="w-20 px-4 py-3">Course code</th>
+              <th className="w-48 px-4 py-3">Course name</th>
+              <th className="w-20 px-4 py-3">Classroom</th>
+              <th className="w-20 px-4 py-3">Attended</th>
+              <th className="w-20 px-4 py-3 rounded-tr-lg">Absent</th>
             </tr>
           </thead>
           <tbody>
@@ -36,7 +49,9 @@ const StudentDashboard = () => {
                 </td>
                 <td className="px-4 py-3 text-sm">F103</td>
                 <td className="px-4 py-3 text-sm">-</td>
-                <td className={`px-4 py-3 text-sm ${i === 5 ? "rounded-br-lg" : ""}`}>-</td>
+                <td className={`px-4 py-3 text-sm ${i === 5 ? "rounded-br-lg" : ""}`}>
+                  -
+                </td>
               </tr>
             ))}
           </tbody>
