@@ -50,7 +50,7 @@ const MarkAttendance = () => {
       {/* Header */}
       <div className="flex justify-between items-center mb-6 mt-2">
         <h2 className="text-xl font-semibold">Mark my attendance</h2>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-8">
           <Bell className="w-5 h-5 text-gray-500" />
           <button onClick={() => setShowProfile((prev) => !prev)}>
             <User className="w-8 h-8 text-gray-600 border rounded-full p-1" />
@@ -67,7 +67,7 @@ const MarkAttendance = () => {
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Select course
           </label>
-          <select className="w-64 border px-3 py-2 rounded text-sm">
+          <select className="w-84 border px-3 py-2 rounded text-sm">
             <option>INF 202: Database Management Systems 1</option>
           </select>
         </div>
@@ -103,7 +103,7 @@ const MarkAttendance = () => {
             <p className="text-center text-gray-600 mb-6">
               Please type the one-time password to mark your attendance
             </p>
-            <div className="flex justify-center gap-2 mb-2">
+            <div className="flex justify-center gap-2 mb-8">
               {otp.map((digit, index) => (
                 <input
                   key={index}

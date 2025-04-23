@@ -13,7 +13,7 @@ const StudentDashboard = () => {
       {/* Header with title, bell, and user icon */}
       <div className="flex justify-between items-center mb-8 mt-2">
         <h2 className="text-xl font-semibold">Dashboard</h2>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-8">
           <Bell className="w-5 h-5 text-gray-500" />
           <button onClick={() => setShowProfile((p) => !p)}>
             <User className="w-8 h-8 text-gray-600 border rounded-full p-1" />

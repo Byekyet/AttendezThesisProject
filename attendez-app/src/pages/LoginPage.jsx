@@ -10,8 +10,8 @@ const LoginPage = () => {
   const handleLogin = () => {
     if (role === "Student") {
       navigate("/dashboard");
-    } else {
-      alert(`Redirect for role: ${role} is not yet implemented.`);
+    } else if (role === "Instructor"){
+      navigate("/instructor/dashboard");
     }
   };
 
@@ -31,7 +31,7 @@ const LoginPage = () => {
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
           >
             <option value="Student">Student</option>
-            <option value="Teacher">Teacher</option>
+            <option value="Instructor">Instructor</option>
             <option value="Admin">Admin</option>
           </select>
         </div>

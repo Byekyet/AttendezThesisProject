@@ -23,6 +23,10 @@ const StudentLayout = () => {
     navigate(route);
   };
 
+  const handleLogout = () => {
+    navigate("/", { replace: true });
+  };
+
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
@@ -45,7 +49,9 @@ const StudentLayout = () => {
             );
           })}
         </nav>
-        <div className="absolute bottom-6 left-4 flex items-center gap-2 text-red-500 cursor-pointer">
+        <div 
+          onClick={handleLogout}
+          className="absolute bottom-6 left-4 flex items-center gap-2 text-red-500 cursor-pointer">
           <LogOut className="w-5 h-5" />
           <span className="text-sm font-medium">Log out</span>
         </div>
