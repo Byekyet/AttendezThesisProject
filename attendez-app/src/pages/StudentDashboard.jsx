@@ -1,5 +1,3 @@
-// src/pages/StudentDashboard.jsx
-
 import React, { useState } from "react";
 import { Bell, User } from "lucide-react";
 import UserProfilePopup from "../components/UserProfilePopup";

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Bell, User } from "lucide-react";
 import UserProfilePopup from "../components/UserProfilePopup";
+import { Link } from "react-router-dom";
 
 const sections = [
   { section: "G101", code: "INF 303", name: "Database management system 1", room: "F103" },
@@ -47,12 +48,12 @@ const InstructorDashboard = () => {
               <tr key={s.section} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                 <td className="px-4 py-3 font-medium">{i + 1}</td>
                 <td className="px-4 py-3">
-                  <a
-                    href={`/instructor/take-attendance?section=${s.section}`}
-                    className="underline"
-                  >
-                    {s.section}
-                  </a>
+                <Link
+                to={`/instructor/take-attendance/manual?section=${s.section}`}
+                className="underline text-blue-600 hover:text-blue-800"
+                >
+                {s.section}
+                </Link>
                 </td>
                 <td className="px-4 py-3">{s.code}</td>
                 <td className="px-4 py-3">{s.name}</td>

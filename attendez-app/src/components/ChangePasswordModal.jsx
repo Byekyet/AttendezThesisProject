@@ -1,4 +1,3 @@
-// src/components/ChangePasswordModal.jsx
 import React, { useState } from "react";
 import { X, Info } from "lucide-react";
 import PasswordUpdatedModal from "../components/PasswordUpdatedModal";
@@ -9,14 +8,12 @@ const ChangePasswordModal = ({ onClose }) => {
   const [next,      setNext]    = useState("");
   const [confirm,   setConfirm] = useState("");
 
-  // mismatch flag: only true once both fields have something and they differ
+  // mismatch flag
   const mismatch =
     confirm.length > 0 && next.length > 0 && confirm !== next;
 
   const handleUpdate = () => {
     if (mismatch) return;
-    // TODO: call your password-change API here, await result…
-    // on success:
     setShowUpdated(true);
   };
 
