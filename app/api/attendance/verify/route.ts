@@ -1,37 +1,46 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
+import { authOptions } from "@/lib/auth";
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
 
-    if (!session) {
+    if (!session || !session.user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { otp } = await req.json();
+    const userId = session.user.id;
+
+    const { otp, courseId, scheduleId } = await req.json();
 
     if (!otp) {
       return NextResponse.json({ message: "OTP is required" }, { status: 400 });
     }
 
-    // Find active lecture with this OTP code
+    // For enhanced security, we could also validate courseId and scheduleId
+    // But for simplicity, we'll focus on validating the OTP
+
+    // Find a lecture with this OTP that is active now
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const now = new Date();
+
     const lecture = await prisma.lecture.findFirst({
       where: {
         otpCode: otp,
         verifyType: "OTP",
+        courseId: courseId ? courseId : undefined,
         date: {
-          // Today's date
-          equals: new Date(new Date().setHours(0, 0, 0, 0)),
+          equals: today,
         },
         startTime: {
-          // Before now
-          lte: new Date(),
+          lte: now,
         },
         endTime: {
-          // After now
-          gte: new Date(),
+          gte: now,
         },
       },
     });
@@ -43,10 +52,10 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check if user is enrolled in the course
+    // Verify that the user is enrolled in this course
     const enrollment = await prisma.courseUser.findFirst({
       where: {
-        userId: session.user.id,
+        userId: userId,
         courseId: lecture.courseId,
       },
     });
@@ -58,11 +67,11 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check if user already has attendance record for this lecture
+    // Check if attendance is already marked
     const existingAttendance = await prisma.attendance.findUnique({
       where: {
         userId_lectureId: {
-          userId: session.user.id,
+          userId: userId,
           lectureId: lecture.id,
         },
       },
@@ -78,25 +87,38 @@ export async function POST(req: Request) {
     // Create OTP session record
     const otpSession = await prisma.otpSession.create({
       data: {
-        userId: session.user.id,
+        userId: userId,
         otp,
         verified: true,
-        expiresAt: new Date(Date.now() + 3600 * 1000), // 1 hour expiry
+        expiresAt: new Date(Date.now() + 3600 * 1000), // Expires in 1 hour
       },
     });
 
     // Create attendance record
     const attendance = await prisma.attendance.create({
       data: {
-        userId: session.user.id,
+        userId: userId,
         lectureId: lecture.id,
         status: "PRESENT",
+      },
+      include: {
+        lecture: {
+          include: {
+            course: true,
+          },
+        },
       },
     });
 
     return NextResponse.json({
       message: "Attendance marked successfully",
-      attendance,
+      attendance: {
+        id: attendance.id,
+        status: attendance.status,
+        course: attendance.lecture.course.name,
+        lecture: attendance.lecture.title,
+        date: attendance.lecture.date,
+      },
     });
   } catch (error) {
     console.error("Error verifying OTP:", error);
