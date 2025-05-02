@@ -21,14 +21,14 @@ export default function RegisterPage() {
     setError(null);
     setLoading(true);
 
-    // Validation
+    
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
       setLoading(false);
       return;
     }
 
-    // Simple password strength validation
+    
     if (formData.password.length < 8) {
       setError("Password must be at least 8 characters long");
       setLoading(false);
@@ -53,7 +53,7 @@ export default function RegisterPage() {
         throw new Error(data.message || "Something went wrong");
       }
 
-      // Registration successful, redirect to login
+      
       router.push("/login");
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred");

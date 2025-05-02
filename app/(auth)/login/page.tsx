@@ -1,15 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { useState, useEffect } from "react";
+import { signIn, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { status } = useSession();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const errorParam = searchParams.get("error");
 
   const [formData, setFormData] = useState({
     email: "",
@@ -18,12 +20,33 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (errorParam) {
+      switch (errorParam) {
+        case "CredentialsSignin":
+          setError("Invalid email or password");
+          break;
+        case "SessionRequired":
+          setError("You need to be logged in to access that page");
+          break;
+        default:
+          setError("An error occurred. Please try again.");
+      }
+    }
+  }, [errorParam]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
     try {
+      console.log("Attempting sign in with:", {
+        email: formData.email,
+        redirect: false,
+        callbackUrl,
+      });
+
       const result = await signIn("credentials", {
         email: formData.email,
         password: formData.password,
@@ -31,8 +54,10 @@ export default function LoginPage() {
         callbackUrl,
       });
 
+      console.log("Sign in result:", result);
+
       if (result?.error) {
-        setError("Invalid email or password");
+        setError(result.error);
       } else if (result?.url) {
         router.push(result.url);
         router.refresh();
@@ -41,8 +66,8 @@ export default function LoginPage() {
         router.refresh();
       }
     } catch (err) {
+      console.error("Login error:", err);
       setError("An unexpected error occurred");
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -54,6 +79,14 @@ export default function LoginPage() {
       [e.target.name]: e.target.value,
     });
   };
+
+  if (status === "loading") {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="text-lg">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div>

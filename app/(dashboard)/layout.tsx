@@ -1,26 +1,26 @@
+"use client";
+
 import { ReactNode } from "react";
-import { getServerSession } from "next-auth";
-import { redirect } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { DashboardNav } from "../../components/dashboard/dashboard-nav";
 import { UserAccountNav } from "../../components/dashboard/user-account-nav";
-import { authOptions } from "@/lib/auth";
 
-export default async function DashboardLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  const session = await getServerSession(authOptions);
+export default function DashboardLayout({ children }: { children: ReactNode }) {
+  const { data: session, status } = useSession();
 
-  if (!session || !session.user) {
-    redirect("/login?error=SessionExpired");
+  if (status === "loading") {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="text-lg">Loading...</div>
+      </div>
+    );
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900">
       <div className="flex flex-1 min-h-screen">
-        <aside className="w-[230px] border-r border-gray-100 px-4 py-6 hidden md:block">
+        <aside className="w-[230px] border-r border-gray-100 px-4 py-6 hidden md:block bg-white">
           <div className="mb-6">
             <Link href="/dashboard" className="flex items-center gap-2 mb-6">
               <span className="bg-blue-600 h-8 w-8 rounded-md flex items-center justify-center">
@@ -29,14 +29,16 @@ export default async function DashboardLayout({
               <span className="font-bold text-xl">Attendez</span>
             </Link>
           </div>
-          <DashboardNav
-            user={{
-              id: session.user.id || "",
-              name: session.user.name || "",
-              email: session.user.email || "",
-              role: session.user.role || "STUDENT",
-            }}
-          />
+          {session?.user && (
+            <DashboardNav
+              user={{
+                id: session.user.id || "",
+                name: session.user.name || "",
+                email: session.user.email || "",
+                role: session.user.role || "STUDENT",
+              }}
+            />
+          )}
         </aside>
         <div className="flex-1 flex flex-col">
           <header className="sticky top-0 z-40 border-b bg-white">
@@ -59,14 +61,16 @@ export default async function DashboardLayout({
                     <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
                   </svg>
                 </button>
-                <UserAccountNav
-                  user={{
-                    id: session.user.id || "",
-                    name: session.user.name || "",
-                    email: session.user.email || "",
-                    role: session.user.role || "STUDENT",
-                  }}
-                />
+                {session?.user && (
+                  <UserAccountNav
+                    user={{
+                      id: session.user.id || "",
+                      name: session.user.name || "",
+                      email: session.user.email || "",
+                      role: session.user.role || "STUDENT",
+                    }}
+                  />
+                )}
               </div>
             </div>
           </header>
