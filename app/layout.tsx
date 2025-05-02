@@ -1,16 +1,12 @@
-import type { Metadata } from "next";
+"use client";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { SessionProvider } from "next-auth/react";
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
 });
-
-export const metadata: Metadata = {
-  title: "Attendez - Attendance Management System",
-  description: "Track and manage attendance efficiently",
-};
 
 export default function RootLayout({
   children,
@@ -19,7 +15,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="antialiased">
-      <body className={`${inter.variable} font-sans`}>{children}</body>
+      <body className={`${inter.variable} font-sans`}>
+        <SessionProvider>{children}</SessionProvider>
+      </body>
     </html>
   );
 }
