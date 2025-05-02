@@ -1,142 +1,135 @@
-// prisma/schema.prisma
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-    id            String       @id @default(cuid())
-    name          String
-    email         String       @unique
-    password      String // Hashed password
-    role          Role         @default(STUDENT)
-    profileImage  String? // URL to profile image
-    createdAt     DateTime     @default(now())
-    updatedAt     DateTime     @updatedAt
-    attendances   Attendance[]
-    courses       CourseUser[]
-    requests      Request[]
-    otpSessions   OtpSession[]
-    lecturesTaken Lecture[]    @relation("LectureTakenBy")
-}
-
-enum Role {
-    TEACHER
-    STUDENT
+  id            String       @id @default(cuid())
+  name          String
+  email         String       @unique
+  password      String
+  role          Role         @default(STUDENT)
+  profileImage  String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  attendances   Attendance[]
+  courses       CourseUser[]
+  lecturesTaken Lecture[]    @relation("LectureTakenBy")
+  otpSessions   OtpSession[]
+  requests      Request[]
 }
 
 model Course {
-    id          String       @id @default(cuid())
-    name        String
-    code        String       @unique
-    description String?
-    createdAt   DateTime     @default(now())
-    updatedAt   DateTime     @updatedAt
-    users       CourseUser[]
-    lectures    Lecture[]
-    Request     Request[]
+  id          String       @id @default(cuid())
+  name        String
+  code        String       @unique
+  description String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  users       CourseUser[]
+  lectures    Lecture[]
 }
 
 model CourseUser {
-    id        String   @id @default(cuid())
-    userId    String
-    courseId  String
-    role      Role     @default(STUDENT)
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-    course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String
+  role      Role     @default(STUDENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-    @@unique([userId, courseId])
+  @@unique([userId, courseId])
 }
 
 model Lecture {
-    id          String       @id @default(cuid())
-    title       String
-    courseId    String
-    takenById   String
-    type        LectureType
-    date        DateTime
-    startTime   DateTime
-    endTime     DateTime
-    verifyType  VerifyType   @default(MANUAL)
-    otpCode     String? // For OTP verification
-    createdAt   DateTime     @default(now())
-    updatedAt   DateTime     @updatedAt
-    course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
-    takenBy     User         @relation("LectureTakenBy", fields: [takenById], references: [id])
-    attendances Attendance[]
-}
-
-enum LectureType {
-    LECTURE // Theory sessions
-    PRACTICE // Practical sessions
-}
-
-enum VerifyType {
-    MANUAL // Teacher marks attendance manually
-    OTP // Students verify with OTP
+  id          String       @id @default(cuid())
+  title       String
+  courseId    String
+  takenById   String
+  type        LectureType
+  date        DateTime
+  startTime   DateTime
+  endTime     DateTime
+  verifyType  VerifyType   @default(MANUAL)
+  otpCode     String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  attendances Attendance[]
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  takenBy     User         @relation("LectureTakenBy", fields: [takenById], references: [id])
 }
 
 model Attendance {
-    id        String   @id @default(cuid())
-    userId    String
-    lectureId String
-    status    Status   @default(PRESENT)
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-    lecture   Lecture  @relation(fields: [lectureId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  userId    String
+  lectureId String
+  status    Status   @default(PRESENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lecture   Lecture  @relation(fields: [lectureId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-    @@unique([userId, lectureId]) // One attendance record per user per lecture
-}
-
-enum Status {
-    PRESENT // Student attended
-    ABSENT // Student did not attend
-    LATE // Student arrived late
-    EXCUSED // Absence excused (e.g., medical)
+  @@unique([userId, lectureId])
 }
 
 model Request {
-    id          String        @id @default(cuid())
-    userId      String
-    type        RequestType
-    description String // Reason for request
-    status      RequestStatus @default(PENDING)
-    lectureId   String? // Optional reference to specific lecture
-    courseId    String // Course the request is related to
-    scheduleId  String? // Optional reference to specific schedule
-    createdAt   DateTime      @default(now())
-    updatedAt   DateTime      @updatedAt
-    user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-    course      Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
-}
-
-enum RequestType {
-    ABSENCE // Request to excuse absence
-    LATE // Request to excuse lateness
-    RE_REGISTRATION // Request to re-register for a course
-    LEAVE // Request for leave of absence
-    OTHER // Other types of requests
-}
-
-enum RequestStatus {
-    PENDING // Request awaiting review
-    APPROVED // Request approved
-    REJECTED // Request rejected
+  id          String        @id @default(cuid())
+  userId      String
+  type        RequestType
+  description String
+  status      RequestStatus @default(PENDING)
+  lectureId   String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model OtpSession {
-    id        String   @id @default(cuid())
-    userId    String
-    otp       String // Generated OTP code
-    expiresAt DateTime // Expiration timestamp
-    verified  Boolean  @default(false)
-    createdAt DateTime @default(now())
-    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  userId    String
+  otp       String
+  expiresAt DateTime
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  TEACHER
+  STUDENT
+}
+
+enum LectureType {
+  LECTURE
+  PRACTICE
+}
+
+enum VerifyType {
+  MANUAL
+  OTP
+}
+
+enum Status {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum RequestType {
+  ABSENCE
+  LATE
+  OTHER
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

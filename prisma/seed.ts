@@ -218,6 +218,9 @@ async function main() {
     const randomLecture =
       pastLectures[Math.floor(Math.random() * pastLectures.length)];
 
+    // Pick a random course
+    const randomCourse = courses[Math.floor(Math.random() * courses.length)];
+
     await prisma.request.create({
       data: {
         userId: student.id,
@@ -225,6 +228,7 @@ async function main() {
         description: requestDescriptions[i],
         status: randomStatus,
         lectureId: randomLecture?.id || null,
+        courseId: randomCourse.id,
       },
     });
 
