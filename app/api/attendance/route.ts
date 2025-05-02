@@ -10,7 +10,6 @@ export async function GET() {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    // Get the user's attendance records with course and lecture details
     const attendanceRecords = await prisma.attendance.findMany({
       where: {
         userId: session.user.id,

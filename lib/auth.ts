@@ -3,29 +3,50 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "./prisma";
 import { Role } from "@prisma/client";
+import { JWT } from "next-auth/jwt";
 
-// Extend the Session type
+// Extend the Session and JWT types
 declare module "next-auth" {
   interface Session {
     user: {
-      id?: string;
-      name?: string;
-      email?: string;
-      role?: Role;
+      id: string;
+      name: string;
+      email: string;
+      role: Role;
     };
+  }
+
+  interface User {
+    id: string;
+    name: string;
+    email: string;
+    role: Role;
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    id: string;
+    name: string;
+    email: string;
+    role: Role;
   }
 }
 
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET,
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   pages: {
     signIn: "/login",
+    signOut: "/login",
+    error: "/login", // Error code passed in query string as ?error=
   },
   providers: [
     CredentialsProvider({
+      id: "credentials",
       name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
@@ -33,7 +54,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          return null;
+          throw new Error("Email and password required");
         }
 
         const user = await prisma.user.findUnique({
@@ -43,7 +64,7 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!user) {
-          return null;
+          throw new Error("User not found");
         }
 
         const isPasswordValid = await verifyPassword(
@@ -52,7 +73,7 @@ export const authOptions: NextAuthOptions = {
         );
 
         if (!isPasswordValid) {
-          return null;
+          throw new Error("Invalid credentials");
         }
 
         return {
@@ -65,7 +86,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    jwt: async ({ token, user }) => {
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
         token.email = user.email;
@@ -74,14 +95,13 @@ export const authOptions: NextAuthOptions = {
       }
       return token;
     },
-    session: async ({ session, token }) => {
+    async session({ session, token }) {
       if (token) {
-        // Ensure user info is properly set from token
         session.user = {
-          id: token.id as string,
-          name: token.name as string,
-          email: token.email as string,
-          role: token.role as Role,
+          id: token.id,
+          name: token.name,
+          email: token.email,
+          role: token.role,
         };
       }
       return session;

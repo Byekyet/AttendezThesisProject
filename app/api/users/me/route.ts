@@ -49,7 +49,7 @@ export async function PUT(req: Request) {
 
     const { name } = await req.json();
 
-    // Validate input
+    
     if (!name || typeof name !== "string" || name.trim() === "") {
       return NextResponse.json(
         { message: "Name is required" },
@@ -57,7 +57,7 @@ export async function PUT(req: Request) {
       );
     }
 
-    // Update user
+    
     const updatedUser = await prisma.user.update({
       where: {
         id: session.user.id,

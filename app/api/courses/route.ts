@@ -13,7 +13,7 @@ export async function GET() {
     let courses = [];
 
     if (session.user.role === "TEACHER") {
-      // Get courses the teacher is assigned to
+      
       const teacherCourses = await prisma.courseUser.findMany({
         where: {
           userId: session.user.id,
@@ -25,7 +25,7 @@ export async function GET() {
       });
       courses = teacherCourses.map((cu) => cu.course);
     } else {
-      // Get courses the student is enrolled in
+      
       const studentCourses = await prisma.courseUser.findMany({
         where: {
           userId: session.user.id,

@@ -50,7 +50,7 @@ export default function ProfilePage() {
         throw new Error(data.message || "Something went wrong");
       }
 
-      // Update the session
+      
       await update({
         ...session,
         user: {

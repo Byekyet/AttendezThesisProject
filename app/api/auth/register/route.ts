@@ -8,7 +8,7 @@ export async function POST(req: Request) {
   try {
     const { name, email, password, role } = await req.json();
 
-    // Input validation
+    
     if (!name || !email || !password) {
       return NextResponse.json(
         { message: "Name, email, and password are required" },
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Email format validation
+    
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return NextResponse.json(
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Password strength validation
+    
     if (password.length < 8) {
       return NextResponse.json(
         { message: "Password must be at least 8 characters long" },
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check if user already exists
+    
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
@@ -45,20 +45,20 @@ export async function POST(req: Request) {
       );
     }
 
-    // Hash password
+    
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create new user
+    
     const user = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
-        role: role === "TEACHER" ? "TEACHER" : "STUDENT", // Default to STUDENT if not specified
+        role: role === "TEACHER" ? "TEACHER" : "STUDENT", 
       },
     });
 
-    // Return the user without the password
+    
     const { password: _, ...userWithoutPassword } = user;
 
     return NextResponse.json(
