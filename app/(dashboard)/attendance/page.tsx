@@ -97,8 +97,10 @@ export default function AttendancePage() {
     const fetchAttendanceData = async () => {
       setLoading(true);
       try {
+        // Add cache-busting timestamp to prevent browser caching
+        const timestamp = new Date().getTime();
         const response = await fetch(
-          `/api/attendance/course?courseId=${selectedCourseId}`
+          `/api/attendance/course?courseId=${selectedCourseId}&_t=${timestamp}`
         );
 
         if (!response.ok) {
@@ -156,19 +158,38 @@ export default function AttendancePage() {
 
   // Get lecture label from title
   const getLectureLabel = (lecture: Lecture) => {
-    // Extract the lecture number from the title (e.g., "Lecture 1: CS101" → "Lecture 1")
-    const titleMatch = lecture.title.match(/^(Lecture|Practice)\s+(\d+)/i);
+    // Direct approach with original format
+    if (lecture.title.includes("Week")) {
+      const match = lecture.title.match(/Week\s+(\d+)/i);
+      if (match) {
+        const weekNum = match[1];
+        return lecture.type === "LECTURE"
+          ? `Lecture ${weekNum}`
+          : `Practice ${weekNum}`;
+      }
+    }
 
+    // Try to match new format "Lecture X: CODE"
+    const titleMatch = lecture.title.match(
+      /^(Lecture|Practice)\s+(\d+)(?::|$)/i
+    );
     if (titleMatch) {
       const type = titleMatch[1]; // "Lecture" or "Practice"
       const number = titleMatch[2];
       return `${type} ${number}`;
     }
 
-    // Fallback to the old method for backward compatibility
+    // Handle Monday 09:00 format lectures
+    if (lecture.title.includes("09:00") || lecture.title.includes("14:00")) {
+      return lecture.type === "LECTURE" ? "Lecture 1" : "Practice 1";
+    }
+
+    // Last fallback
     const date = new Date(lecture.date);
     const weekNumber = Math.ceil((date.getDate() + 6 - date.getDay()) / 7);
-    return `Week ${weekNumber}`;
+    return lecture.type === "LECTURE"
+      ? `Lecture ${weekNumber}`
+      : `Practice ${weekNumber}`;
   };
 
   // Handle course selection

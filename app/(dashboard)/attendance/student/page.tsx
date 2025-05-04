@@ -65,8 +65,10 @@ export default function StudentAttendancePage() {
     const fetchStudentData = async () => {
       setLoading(true);
       try {
+        // Add cache-busting timestamp to prevent browser caching
+        const timestamp = new Date().getTime();
         const response = await fetch(
-          `/api/attendance/course?courseId=${courseId}&studentId=${studentId}`
+          `/api/attendance/course?courseId=${courseId}&studentId=${studentId}&_t=${timestamp}`
         );
 
         if (!response.ok) {
