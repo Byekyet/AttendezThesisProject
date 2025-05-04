@@ -243,8 +243,8 @@ export default function AttendancePage() {
   }
 
   return (
-    <div className="p-6 max-w-full mx-auto">
-      <div className="flex justify-between items-center mb-6">
+    <div className="h-[calc(100vh-64px)] flex flex-col overflow-hidden">
+      <div className="flex justify-between items-center px-6 pt-6 mb-6">
         <h1 className="text-2xl font-bold">Attendance List</h1>
         <div className="flex space-x-4">
           {/* Course Selector */}
@@ -285,13 +285,13 @@ export default function AttendancePage() {
       </div>
 
       {error && (
-        <div className="mb-6 bg-red-100 border border-red-400 text-red-700 p-3 rounded">
+        <div className="mx-6 mb-6 bg-red-100 border border-red-400 text-red-700 p-3 rounded">
           {error}
         </div>
       )}
 
       {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6">
+      <div className="mx-6 mb-6 bg-white p-4 rounded-lg shadow">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex-1 min-w-[200px]">
             <label
@@ -338,29 +338,18 @@ export default function AttendancePage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-12 bg-white rounded-lg shadow">
+        <div className="mx-6 text-center py-12 bg-white rounded-lg shadow flex-grow">
           <p className="text-gray-500">Loading attendance data...</p>
         </div>
       ) : attendanceData ? (
-        <div
-          className="bg-white rounded-lg shadow overflow-hidden"
-          style={{
-            height: "calc(100vh - 280px)",
-            width: "calc(100vw - 255px)",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <div
-            className="overflow-x-auto flex-1"
-            style={{ position: "relative" }}
-          >
-            <div style={{ display: "inline-block", minWidth: "100%" }}>
-              <table className="border-separate border-spacing-0">
-                <thead>
+        <div className="mx-6 pb-6 flex-grow flex flex-col">
+          <div className="bg-white rounded-lg shadow overflow-hidden flex-grow">
+            <div className="overflow-auto h-full">
+              <table className="border-separate border-spacing-0 table-fixed">
+                <thead className="sticky top-0 z-20">
                   <tr>
                     <th
-                      className="sticky left-0 z-20 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-700 border-b"
+                      className="sticky left-0 z-30 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-700 border-b"
                       style={{ width: "200px" }}
                     >
                       <div className="flex items-center">
@@ -374,7 +363,7 @@ export default function AttendancePage() {
                         className="px-4 py-3 text-sm font-medium text-gray-700 text-center border-b bg-gray-50"
                         onMouseEnter={() => setHoveredLecture(lecture.id)}
                         onMouseLeave={() => setHoveredLecture(null)}
-                        style={{ position: "relative", minWidth: "80px" }}
+                        style={{ width: "80px", minWidth: "80px" }}
                       >
                         <div className="flex flex-col items-center">
                           <span>{getWeekName(lecture.date)}</span>
@@ -438,32 +427,32 @@ export default function AttendancePage() {
                 </tbody>
               </table>
             </div>
-          </div>
 
-          {/* Legend */}
-          <div className="p-4 border-t border-gray-200">
-            <div className="flex flex-wrap items-center gap-6">
-              <div className="flex items-center">
-                <div className="w-4 h-4 bg-green-500 rounded-full mr-2"></div>
-                <span className="text-sm">Present</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-4 h-4 bg-yellow-500 rounded-full mr-2"></div>
-                <span className="text-sm">Late</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-4 h-4 bg-blue-500 rounded-full mr-2"></div>
-                <span className="text-sm">Excused</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-4 h-4 bg-red-500 rounded-full mr-2"></div>
-                <span className="text-sm">Absent</span>
-              </div>
-              <div className="flex items-center ml-auto">
-                <Info className="h-4 w-4 text-blue-500 mr-2" />
-                <span className="text-sm text-gray-600">
-                  Click on a student row to view details
-                </span>
+            {/* Legend */}
+            <div className="p-4 border-t border-gray-200">
+              <div className="flex flex-wrap items-center gap-6">
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-green-500 rounded-full mr-2"></div>
+                  <span className="text-sm">Present</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-yellow-500 rounded-full mr-2"></div>
+                  <span className="text-sm">Late</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-blue-500 rounded-full mr-2"></div>
+                  <span className="text-sm">Excused</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-red-500 rounded-full mr-2"></div>
+                  <span className="text-sm">Absent</span>
+                </div>
+                <div className="flex items-center ml-auto">
+                  <Info className="h-4 w-4 text-blue-500 mr-2" />
+                  <span className="text-sm text-gray-600">
+                    Click on a student row to view details
+                  </span>
+                </div>
               </div>
             </div>
           </div>
