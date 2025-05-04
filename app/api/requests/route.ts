@@ -2,9 +2,33 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
-import { RequestType } from "@prisma/client";
+import { RequestType, RequestStatus } from "@prisma/client";
 
-// GET: Fetch all requests for the current user
+// Define types to help with TypeScript
+type RequestWithUser = {
+  id: string;
+  type: RequestType;
+  description: string;
+  status: RequestStatus;
+  createdAt: Date;
+  updatedAt: Date;
+  user: { name: string } | null;
+  course: { name: string; code: string };
+  [key: string]: any;
+};
+
+type RequestWithoutUser = {
+  id: string;
+  type: RequestType;
+  description: string;
+  status: RequestStatus;
+  createdAt: Date;
+  updatedAt: Date;
+  course: { name: string; code: string };
+  [key: string]: any;
+};
+
+// GET: Fetch requests based on user role
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -14,27 +38,97 @@ export async function GET() {
     }
 
     const userId = session.user.id;
+    const userRole = session.user.role;
 
-    // Fetch all requests for the current user
-    const requests = await prisma.request.findMany({
-      where: {
-        userId: userId,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+    if (userRole === "TEACHER") {
+      // For teachers, get all requests from their courses
+      const teacherCourses = await prisma.courseUser.findMany({
+        where: {
+          userId: userId,
+          role: "TEACHER",
+        },
+        select: {
+          courseId: true,
+        },
+      });
 
-    // Format the data for the client
-    const formattedRequests = requests.map((request) => ({
-      id: request.id,
-      type: request.type,
-      description: request.description,
-      status: request.status,
-      requestDate: request.createdAt.toISOString().split("T")[0],
-    }));
+      const courseIds = teacherCourses.map((course) => course.courseId);
 
-    return NextResponse.json(formattedRequests);
+      const requests = await prisma.request.findMany({
+        where: {
+          courseId: {
+            in: courseIds,
+          },
+        },
+        include: {
+          user: {
+            select: {
+              name: true,
+            },
+          },
+          course: {
+            select: {
+              name: true,
+              code: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+
+      // Format the data for teachers
+      const formattedRequests = requests.map((request) => {
+        const typedRequest = request as unknown as RequestWithUser;
+        return {
+          id: typedRequest.id,
+          type: typedRequest.type,
+          description: typedRequest.description,
+          status: typedRequest.status,
+          requestDate: typedRequest.createdAt.toISOString().split("T")[0],
+          courseCode: typedRequest.course.code,
+          courseName: typedRequest.course.name,
+          userName: typedRequest.user?.name,
+        };
+      });
+
+      return NextResponse.json(formattedRequests);
+    } else {
+      // For students, only get their own requests
+      const requests = await prisma.request.findMany({
+        where: {
+          userId: userId,
+        },
+        include: {
+          course: {
+            select: {
+              name: true,
+              code: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+
+      // Format the data for students
+      const formattedRequests = requests.map((request) => {
+        const typedRequest = request as unknown as RequestWithoutUser;
+        return {
+          id: typedRequest.id,
+          type: typedRequest.type,
+          description: typedRequest.description,
+          status: typedRequest.status,
+          requestDate: typedRequest.createdAt.toISOString().split("T")[0],
+          courseCode: typedRequest.course.code,
+          courseName: typedRequest.course.name,
+        };
+      });
+
+      return NextResponse.json(formattedRequests);
+    }
   } catch (error) {
     console.error("Error fetching requests:", error);
     return NextResponse.json(

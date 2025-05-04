@@ -211,7 +211,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-blue-50",
                 pathname === item.href || pathname.startsWith(`${item.href}/`)
-                  ? "bg-blue-600 text-white"
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
                   : "text-gray-700"
               )}
             >
