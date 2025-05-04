@@ -11,7 +11,6 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    
     const user = await prisma.user.findUnique({
       where: {
         id: session.user.id,
@@ -29,9 +28,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    
     if (user.role === "TEACHER") {
-      
+      // Get courses where user is a teacher
       const sections = await prisma.courseUser.findMany({
         where: {
           userId: user.id,
@@ -42,7 +40,7 @@ export async function GET(req: NextRequest) {
         },
       });
 
-      
+      // Get recent lecture sessions
       const recentSessions = await prisma.lecture.findMany({
         where: {
           takenById: user.id,
@@ -66,19 +64,11 @@ export async function GET(req: NextRequest) {
         },
       });
 
-      
+      // Get pending requests
       const pendingRequests = await prisma.request.findMany({
         where: {
           status: "PENDING",
-          
-          lectureId: {
-            in: await prisma.lecture
-              .findMany({
-                where: { takenById: user.id },
-                select: { id: true },
-              })
-              .then((lectures) => lectures.map((l) => l.id)),
-          },
+          courseId: { in: sections.map((section) => section.courseId) },
         },
         include: {
           user: {
@@ -89,20 +79,104 @@ export async function GET(req: NextRequest) {
             },
           },
         },
-        take: 5,
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 10,
       });
+
+      // Count total students in teacher's courses
+      const totalStudentsResult = await prisma.courseUser.groupBy({
+        by: ["userId"],
+        where: {
+          courseId: {
+            in: sections.map((section) => section.courseId),
+          },
+          role: "STUDENT",
+        },
+      });
+
+      // Count total lectures in teacher's courses
+      const totalLectures = await prisma.lecture.count({
+        where: {
+          courseId: {
+            in: sections.map((section) => section.courseId),
+          },
+        },
+      });
+
+      // Get upcoming lectures (lectures in the future)
+      const today = new Date();
+      const upcomingLectures = await prisma.lecture.count({
+        where: {
+          courseId: {
+            in: sections.map((section) => section.courseId),
+          },
+          date: {
+            gte: today,
+          },
+        },
+      });
+
+      // Create course summary
+      const courseSummary = {
+        totalCourses: sections.length,
+        totalStudents: totalStudentsResult.length,
+        totalLectures: totalLectures,
+        upcomingLectures: upcomingLectures,
+      };
+
+      // Get additional data for each course
+      const enhancedSections = await Promise.all(
+        sections.map(async (section) => {
+          // Get student count for this course
+          const studentCount = await prisma.courseUser.count({
+            where: {
+              courseId: section.courseId,
+              role: "STUDENT",
+            },
+          });
+
+          // Get most recent lecture for this course
+          const lastLecture = await prisma.lecture.findFirst({
+            where: {
+              courseId: section.courseId,
+            },
+            orderBy: {
+              date: "desc",
+            },
+            select: {
+              id: true,
+              title: true,
+              date: true,
+            },
+          });
+
+          return {
+            ...section,
+            studentCount,
+            lastLecture,
+          };
+        })
+      );
 
       return NextResponse.json({
         user,
-        sections,
+        sections: enhancedSections,
         recentSessions,
         pendingRequests,
+        courseSummary,
       });
     } else if (user.role === "STUDENT") {
-      
+      // Get attendance records for student
       const attendances = await prisma.attendance.findMany({
         where: {
           userId: user.id,
+        },
+        orderBy: {
+          lecture: {
+            date: "desc",
+          },
         },
         include: {
           lecture: {
@@ -113,9 +187,63 @@ export async function GET(req: NextRequest) {
         },
       });
 
+      // Get course enrollment details with additional stats
+      const coursesWithStats = await Promise.all(
+        user.courses.map(async (courseUser) => {
+          const courseAttendances = attendances.filter(
+            (a) => a.lecture.courseId === courseUser.courseId
+          );
+
+          const stats = {
+            total: courseAttendances.length,
+            present: courseAttendances.filter((a) => a.status === "PRESENT")
+              .length,
+            absent: courseAttendances.filter((a) => a.status === "ABSENT")
+              .length,
+            late: courseAttendances.filter((a) => a.status === "LATE").length,
+            excused: courseAttendances.filter((a) => a.status === "EXCUSED")
+              .length,
+          };
+
+          // Get upcoming lectures for this course
+          const today = new Date();
+          const upcomingLectures = await prisma.lecture.findMany({
+            where: {
+              courseId: courseUser.courseId,
+              date: {
+                gte: today,
+              },
+            },
+            orderBy: {
+              date: "asc",
+            },
+            take: 1,
+          });
+
+          return {
+            ...courseUser,
+            stats,
+            nextLecture: upcomingLectures[0] || null,
+          };
+        })
+      );
+
+      // Create course summary for student
+      const courseSummary = {
+        totalCourses: user.courses.length,
+        upcomingLectures: await prisma.lecture.count({
+          where: {
+            courseId: { in: user.courses.map((c) => c.courseId) },
+            date: { gte: new Date() },
+          },
+        }),
+      };
+
       return NextResponse.json({
         user,
         attendances,
+        courses: coursesWithStats,
+        courseSummary,
       });
     } else {
       return NextResponse.json({
