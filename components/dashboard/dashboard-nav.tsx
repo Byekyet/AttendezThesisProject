@@ -40,7 +40,7 @@ const navItems: NavItem[] = [
   },
   {
     title: "Take Attendance",
-    href: "/take-attendance",
+    href: "/attendance/take",
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -134,7 +134,7 @@ const navItems: NavItem[] = [
   },
   {
     title: "Request",
-    href: "/request",
+    href: "/requests",
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
