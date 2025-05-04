@@ -110,7 +110,55 @@ export default function ReviewRequestPage() {
 
   // Handle approve request
   const handleApprove = async () => {
-    await updateRequestStatus("APPROVED");
+    setSubmitting(true);
+
+    // Determine if this is an attendance-related request
+    const isAttendanceRelated = ["ABSENCE", "LATE", "RE_REGISTRATION"].includes(
+      request?.type || ""
+    );
+
+    try {
+      const response = await fetch(`/api/requests/${request?.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: "APPROVED",
+          comment: comment.trim() || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Failed to update request");
+      }
+
+      const data = await response.json();
+      let message = data.message;
+
+      // Add info about attendance status change
+      if (isAttendanceRelated) {
+        const statusMap: Record<string, string> = {
+          ABSENCE: "excused absence",
+          LATE: "late arrival",
+          RE_REGISTRATION: "present",
+        };
+
+        const statusText = statusMap[request?.type || ""] || "";
+        if (statusText) {
+          message += `. Student's attendance status has been updated to ${statusText}.`;
+        }
+      }
+
+      setSuccessMessage(message);
+      setShowSuccess(true);
+    } catch (err: any) {
+      setError(err.message || "An error occurred");
+      console.error(err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Handle reject request
@@ -302,6 +350,14 @@ export default function ReviewRequestPage() {
               placeholder="Add your comments or feedback here..."
               disabled={submitting}
             ></textarea>
+            {["ABSENCE", "LATE", "RE_REGISTRATION"].includes(
+              request?.type || ""
+            ) && (
+              <div className="mt-2 text-sm text-blue-600">
+                <strong>Note:</strong> Approving this request will automatically
+                update the student's attendance status.
+              </div>
+            )}
           </div>
           <div className="flex space-x-4">
             <button

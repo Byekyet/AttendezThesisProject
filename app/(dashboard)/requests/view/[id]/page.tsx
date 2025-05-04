@@ -120,6 +120,35 @@ export default function ViewRequestPage() {
     );
   };
 
+  // Add this function to display attendance status change information
+  const getAttendanceStatusMessage = (request: RequestDetails) => {
+    if (request.status !== "APPROVED") return null;
+
+    const isAttendanceRelated = ["ABSENCE", "LATE", "RE_REGISTRATION"].includes(
+      request.type
+    );
+    if (!isAttendanceRelated) return null;
+
+    const statusMap: Record<string, string> = {
+      ABSENCE: "excused absence",
+      LATE: "late arrival",
+      RE_REGISTRATION: "present",
+    };
+
+    const statusText = statusMap[request.type] || "";
+    if (!statusText) return null;
+
+    return (
+      <div className="mt-6 p-4 bg-blue-50 text-blue-700 rounded-md">
+        <p className="font-medium">Attendance Status Updated</p>
+        <p className="text-sm mt-1">
+          This request was approved and the student's attendance status has been
+          updated to <strong>{statusText}</strong>.
+        </p>
+      </div>
+    );
+  };
+
   if (loading) {
     return <div className="p-6 text-center">Loading request details...</div>;
   }
@@ -235,6 +264,7 @@ export default function ViewRequestPage() {
             <p className="whitespace-pre-line bg-gray-50 p-4 rounded">
               {request.description}
             </p>
+            {getAttendanceStatusMessage(request)}
           </div>
         </div>
       </div>

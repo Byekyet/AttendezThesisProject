@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
-import { RequestStatus } from "@prisma/client";
+import { RequestStatus, Status } from "@prisma/client";
 
 // GET: Fetch a specific request by ID
 export async function GET(
@@ -145,10 +145,18 @@ export async function PATCH(
       );
     }
 
-    // Get the request
+    // Get the request with related lecture information
     const request = await prisma.request.findUnique({
       where: {
         id: requestId,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 
@@ -173,6 +181,61 @@ export async function PATCH(
         { message: "You don't have access to this request" },
         { status: 403 }
       );
+    }
+
+    // Handle attendance status update if this is an attendance-related request
+    // and if the request has an associated lecture
+    if (request.lectureId && status === "APPROVED") {
+      const requestType = request.type;
+      let attendanceStatus: Status | null = null;
+
+      // Determine the appropriate attendance status based on request type
+      switch (requestType) {
+        case "ABSENCE":
+          attendanceStatus = Status.EXCUSED;
+          break;
+        case "LATE":
+          attendanceStatus = Status.LATE;
+          break;
+        case "RE_REGISTRATION":
+          attendanceStatus = Status.PRESENT;
+          break;
+        default:
+          // No attendance status change for other request types
+          break;
+      }
+
+      // Update attendance record if we have determined a status
+      if (attendanceStatus) {
+        // Check if attendance record exists
+        const existingAttendance = await prisma.attendance.findFirst({
+          where: {
+            userId: request.userId,
+            lectureId: request.lectureId,
+          },
+        });
+
+        if (existingAttendance) {
+          // Update existing record
+          await prisma.attendance.update({
+            where: {
+              id: existingAttendance.id,
+            },
+            data: {
+              status: attendanceStatus,
+            },
+          });
+        } else {
+          // Create new attendance record
+          await prisma.attendance.create({
+            data: {
+              userId: request.userId,
+              lectureId: request.lectureId,
+              status: attendanceStatus,
+            },
+          });
+        }
+      }
     }
 
     // Update the request status
