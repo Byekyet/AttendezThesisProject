@@ -32,6 +32,7 @@ model Course {
   updatedAt   DateTime     @updatedAt
   users       CourseUser[]
   lectures    Lecture[]
+  requests    Request[]
 }
 
 model CourseUser {
@@ -87,6 +88,9 @@ model Request {
   lectureId   String?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+  courseId    String
+  scheduleId  String?
+  course      Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
   user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -126,6 +130,8 @@ enum RequestType {
   ABSENCE
   LATE
   OTHER
+  RE_REGISTRATION
+  LEAVE
 }
 
 enum RequestStatus {

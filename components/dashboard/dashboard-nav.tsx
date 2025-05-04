@@ -152,7 +152,7 @@ const navItems: NavItem[] = [
         <path d="M12 5v14" />
       </svg>
     ),
-    roles: ["TEACHER", "STUDENT"],
+    roles: ["TEACHER"],
   },
   {
     title: "Log out",
