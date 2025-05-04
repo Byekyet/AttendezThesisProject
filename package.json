@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "npx prisma generate && npx prisma db seed && next dev --turbopack",
+    "dev": "npx prisma generate && next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
