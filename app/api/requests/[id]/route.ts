@@ -245,9 +245,7 @@ export async function PATCH(
       },
       data: {
         status: status as RequestStatus,
-        description: comment
-          ? `${request.description}\n\nTeacher comment: ${comment}`
-          : request.description,
+        responseNotes: comment ? comment.trim() : null,
       },
     });
 

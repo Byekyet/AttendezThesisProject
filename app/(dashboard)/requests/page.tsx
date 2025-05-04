@@ -19,6 +19,7 @@ interface Request {
   status: string;
   userName?: string;
   description?: string;
+  responseNotes?: string | null;
 }
 
 export default function RequestsPage() {
@@ -251,6 +252,21 @@ export default function RequestsPage() {
                       </td>
                       <td className="px-4 py-3 text-sm">
                         <StatusBadge status={request.status} />
+                        {!isTeacher &&
+                          request.status !== "PENDING" &&
+                          request.responseNotes && (
+                            <div className="mt-1">
+                              <span className="text-xs text-gray-500">
+                                Response:{" "}
+                                {request.responseNotes.length > 20
+                                  ? `${request.responseNotes.substring(
+                                      0,
+                                      20
+                                    )}...`
+                                  : request.responseNotes}
+                              </span>
+                            </div>
+                          )}
                       </td>
                       {isTeacher && (
                         <td className="px-4 py-3 text-sm">

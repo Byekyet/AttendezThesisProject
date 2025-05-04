@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
@@ -29,7 +29,7 @@ type RequestWithoutUser = {
 };
 
 // GET: Fetch requests based on user role
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -40,8 +40,10 @@ export async function GET() {
     const userId = session.user.id;
     const userRole = session.user.role;
 
+    let requests = [];
+
     if (userRole === "TEACHER") {
-      // For teachers, get all requests from their courses
+      // Get all courses the teacher teaches
       const teacherCourses = await prisma.courseUser.findMany({
         where: {
           userId: userId,
@@ -52,9 +54,11 @@ export async function GET() {
         },
       });
 
+      // Extract course IDs
       const courseIds = teacherCourses.map((course) => course.courseId);
 
-      const requests = await prisma.request.findMany({
+      // Get all requests for these courses
+      const requestsData = await prisma.request.findMany({
         where: {
           courseId: {
             in: courseIds,
@@ -78,25 +82,21 @@ export async function GET() {
         },
       });
 
-      // Format the data for teachers
-      const formattedRequests = requests.map((request) => {
-        const typedRequest = request as unknown as RequestWithUser;
-        return {
-          id: typedRequest.id,
-          type: typedRequest.type,
-          description: typedRequest.description,
-          status: typedRequest.status,
-          requestDate: typedRequest.createdAt.toISOString().split("T")[0],
-          courseCode: typedRequest.course.code,
-          courseName: typedRequest.course.name,
-          userName: typedRequest.user?.name,
-        };
-      });
-
-      return NextResponse.json(formattedRequests);
+      // Format the data for the client
+      requests = requestsData.map((request) => ({
+        id: request.id,
+        type: request.type,
+        courseCode: request.course.code,
+        courseName: request.course.name,
+        userName: request.user.name,
+        requestDate: request.createdAt.toISOString().split("T")[0],
+        status: request.status,
+        description: request.description,
+        responseNotes: request.responseNotes,
+      }));
     } else {
-      // For students, only get their own requests
-      const requests = await prisma.request.findMany({
+      // For students, get their own requests
+      const requestsData = await prisma.request.findMany({
         where: {
           userId: userId,
         },
@@ -113,22 +113,20 @@ export async function GET() {
         },
       });
 
-      // Format the data for students
-      const formattedRequests = requests.map((request) => {
-        const typedRequest = request as unknown as RequestWithoutUser;
-        return {
-          id: typedRequest.id,
-          type: typedRequest.type,
-          description: typedRequest.description,
-          status: typedRequest.status,
-          requestDate: typedRequest.createdAt.toISOString().split("T")[0],
-          courseCode: typedRequest.course.code,
-          courseName: typedRequest.course.name,
-        };
-      });
-
-      return NextResponse.json(formattedRequests);
+      // Format the data for the client
+      requests = requestsData.map((request) => ({
+        id: request.id,
+        type: request.type,
+        courseCode: request.course.code,
+        courseName: request.course.name,
+        requestDate: request.createdAt.toISOString().split("T")[0],
+        status: request.status,
+        description: request.description,
+        responseNotes: request.responseNotes,
+      }));
     }
+
+    return NextResponse.json(requests);
   } catch (error) {
     console.error("Error fetching requests:", error);
     return NextResponse.json(

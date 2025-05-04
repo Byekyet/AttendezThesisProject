@@ -10,6 +10,7 @@ interface RequestDetails {
   type: string;
   description: string;
   status: string;
+  responseNotes?: string | null;
   createdAt: string;
   updatedAt: string;
   userId: string;
@@ -264,6 +265,23 @@ export default function ViewRequestPage() {
             <p className="whitespace-pre-line bg-gray-50 p-4 rounded">
               {request.description}
             </p>
+
+            {/* Teacher Response Notes */}
+            {request.status !== "PENDING" && request.responseNotes && (
+              <div className="mt-6">
+                <h2 className="text-lg font-semibold mb-2">Teacher Response</h2>
+                <div
+                  className={`p-4 rounded whitespace-pre-line ${
+                    request.status === "APPROVED"
+                      ? "bg-green-50 text-green-800"
+                      : "bg-red-50 text-red-800"
+                  }`}
+                >
+                  {request.responseNotes}
+                </div>
+              </div>
+            )}
+
             {getAttendanceStatusMessage(request)}
           </div>
         </div>

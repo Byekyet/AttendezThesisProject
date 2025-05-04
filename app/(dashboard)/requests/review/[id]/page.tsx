@@ -11,6 +11,7 @@ interface RequestDetails {
   type: string;
   description: string;
   status: string;
+  responseNotes?: string | null;
   createdAt: string;
   updatedAt: string;
   userId: string;
@@ -339,15 +340,19 @@ export default function ReviewRequestPage() {
               htmlFor="comment"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
-              Comment (optional)
+              Response Notes
             </label>
+            <div className="mb-2 text-sm text-gray-600">
+              Provide feedback to the student explaining your decision. These
+              notes will be visible to the student.
+            </div>
             <textarea
               id="comment"
               rows={4}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Add your comments or feedback here..."
+              placeholder="Explain your decision to the student here..."
               disabled={submitting}
             ></textarea>
             {["ABSENCE", "LATE", "RE_REGISTRATION"].includes(

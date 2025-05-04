@@ -28,6 +28,30 @@ Attendez is a full-featured attendance management platform designed for educatio
   - **OTP Verification**: Generate one-time codes for student self-verification
 - **Request Management**: Review and respond to student absence requests
 
+## Teacher Response to Requests
+
+The system now supports detailed teacher responses when reviewing student requests.
+
+### Features
+
+1. **Teacher Response Notes**: 
+   - When reviewing student requests, teachers can now provide detailed feedback 
+   - The response notes are stored separately from the request description
+   - These notes help explain the decision to approve or reject a request
+
+2. **Student Visibility**:
+   - Students can see the teacher's response notes on their request details page
+   - The response is highlighted in green for approved requests or red for rejected requests
+   - A preview of the response is shown in the requests list
+
+3. **Improved Feedback Loop**:
+   - Teachers can provide constructive feedback with their decisions
+   - Students receive clear explanations for request outcomes
+   - Creates a more transparent communication channel
+
+### Technical Implementation
+
+The request model has been extended with a `responseNotes` field that stores the teacher's response separately from the original request description. This separation allows for better UI presentation and maintains the integrity of the original request.
 
 ## Project Structure
 
@@ -414,3 +438,23 @@ The API follows RESTful conventions:
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Maintaining Future Lectures
+
+The system includes functionality to generate future lectures for courses. This is useful as the semester progresses to ensure students always have upcoming lectures visible in the attendance system.
+
+### Generate Future Lectures
+
+To generate lectures for the next 4 weeks based on existing schedule patterns:
+
+```bash
+npm run generate-future
+```
+
+This script:
+1. Finds the most recent lecture for each course
+2. Creates 4 new weekly lectures and practice sessions following the same schedule pattern
+3. Numbers the lectures and practice sessions sequentially (e.g., Lecture 11, Lecture 12, etc.)
+4. Assigns the appropriate teacher to each lecture
+
+Run this script periodically to maintain a rolling schedule of upcoming lectures.

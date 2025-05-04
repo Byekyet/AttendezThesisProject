@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "seed": "npx prisma db seed",
-    "fix-lectures": "node --loader ts-node/esm scripts/fix-lecture-titles.ts"
+    "fix-lectures": "node --loader ts-node/esm scripts/fix-lecture-titles.ts",
+    "generate-future": "node --loader ts-node/esm scripts/generate-future-lectures.ts"
   },
   "prisma": {
     "seed": "node --loader ts-node/esm prisma/seed-simple.ts"

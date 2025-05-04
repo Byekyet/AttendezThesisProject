@@ -362,9 +362,9 @@ async function main() {
     console.log(`Created attendance records for ${lecture.title}`);
   }
 
-  // Create 1-5 requests for each student
+  // Create 1-2 requests for each student
   for (const student of students) {
-    const numRequests = getRandomInt(1, 5);
+    const numRequests = getRandomInt(1, 2);
 
     for (let i = 0; i < numRequests; i++) {
       // Pick a random course
