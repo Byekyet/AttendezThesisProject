@@ -120,7 +120,7 @@ async function main() {
 
       const lecture = await prisma.lecture.create({
         data: {
-          title: `Lecture - Week ${10 - week} - ${course.name}`,
+          title: `Lecture ${week + 1}: ${course.code}`,
           courseId: course.id,
           takenById: teacher.id,
           type: LectureType.LECTURE,
@@ -132,7 +132,7 @@ async function main() {
       });
 
       lectures.push(lecture);
-      console.log(`Created lecture for ${course.name} - Week ${10 - week}`);
+      console.log(`Created lecture for ${course.name} - Lecture ${week + 1}`);
 
       // Create the practice (Wednesday)
       const practiceStartTime = new Date(practiceDate);
@@ -143,7 +143,7 @@ async function main() {
 
       const practice = await prisma.lecture.create({
         data: {
-          title: `Practice - Week ${10 - week} - ${course.name}`,
+          title: `Practice ${week + 1}: ${course.code}`,
           courseId: course.id,
           takenById: teacher.id,
           type: LectureType.PRACTICE,
@@ -155,7 +155,7 @@ async function main() {
       });
 
       lectures.push(practice);
-      console.log(`Created practice for ${course.name} - Week ${10 - week}`);
+      console.log(`Created practice for ${course.name} - Practice ${week + 1}`);
     }
   }
 

@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "seed": "npx prisma db seed"
+    "seed": "npx prisma db seed",
+    "fix-lectures": "node --loader ts-node/esm scripts/fix-lecture-titles.ts"
   },
   "prisma": {
     "seed": "node --loader ts-node/esm prisma/seed-simple.ts"

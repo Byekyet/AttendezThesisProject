@@ -154,9 +154,19 @@ export default function AttendancePage() {
     }
   };
 
-  // Get week name from date
-  const getWeekName = (dateStr: string) => {
-    const date = new Date(dateStr);
+  // Get lecture label from title
+  const getLectureLabel = (lecture: Lecture) => {
+    // Extract the lecture number from the title (e.g., "Lecture 1: CS101" → "Lecture 1")
+    const titleMatch = lecture.title.match(/^(Lecture|Practice)\s+(\d+)/i);
+
+    if (titleMatch) {
+      const type = titleMatch[1]; // "Lecture" or "Practice"
+      const number = titleMatch[2];
+      return `${type} ${number}`;
+    }
+
+    // Fallback to the old method for backward compatibility
+    const date = new Date(lecture.date);
     const weekNumber = Math.ceil((date.getDate() + 6 - date.getDay()) / 7);
     return `Week ${weekNumber}`;
   };
@@ -191,9 +201,9 @@ export default function AttendancePage() {
     // Create CSV header
     let csvContent = "Student ID,Student Name,";
 
-    // Add lecture dates to header
+    // Add lecture titles to header
     attendanceData.lectures.forEach((lecture) => {
-      csvContent += `${lecture.date} (${lecture.startTime}),`;
+      csvContent += `${getLectureLabel(lecture)} (${lecture.date}),`;
     });
     csvContent += "\n";
 
@@ -360,13 +370,13 @@ export default function AttendancePage() {
                     {attendanceData.lectures.map((lecture) => (
                       <th
                         key={lecture.id}
-                        className="px-4 py-3 text-sm font-medium text-gray-700 text-center border-b bg-gray-50"
+                        className="px-2 py-3 text-xs font-medium text-gray-700 text-center border-b bg-gray-50"
                         onMouseEnter={() => setHoveredLecture(lecture.id)}
                         onMouseLeave={() => setHoveredLecture(null)}
-                        style={{ width: "80px", minWidth: "80px" }}
+                        style={{ width: "120px", minWidth: "120px" }}
                       >
                         <div className="flex flex-col items-center">
-                          <span>{getWeekName(lecture.date)}</span>
+                          <span>{getLectureLabel(lecture)}</span>
                         </div>
 
                         {/* Popover for lecture details */}
