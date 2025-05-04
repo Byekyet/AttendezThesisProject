@@ -9,11 +9,15 @@ interface MainLayoutProps {
 
 export function MainLayout({ children, title }: MainLayoutProps) {
   return (
-    <div className="flex h-screen">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title={title} />
-        <main className="flex-1 overflow-auto p-6">{children}</main>
+    <div className="flex h-screen w-full overflow-hidden">
+      <div className="fixed h-screen z-20">
+        <Sidebar />
+      </div>
+      <div className="ml-[260px] flex-1 flex flex-col h-screen">
+        <div className="fixed top-0 right-0 left-[260px] z-10">
+          <Header title={title} />
+        </div>
+        <main className="pt-16 flex-1 overflow-auto p-6">{children}</main>
       </div>
     </div>
   );

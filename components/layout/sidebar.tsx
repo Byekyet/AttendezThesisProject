@@ -32,7 +32,7 @@ const SidebarItem = ({ href, icon, label, active }: SidebarItemProps) => {
 
 export function Sidebar() {
   return (
-    <aside className="w-[260px] h-screen border-r border-gray-200 p-4 flex flex-col">
+    <aside className="w-[260px] h-screen border-r border-gray-200 p-4 flex flex-col overflow-y-auto">
       <div className="flex items-center gap-3 px-3 py-4">
         <div className="w-8 h-8 rounded-md bg-blue-600 flex items-center justify-center text-white font-bold">
           A

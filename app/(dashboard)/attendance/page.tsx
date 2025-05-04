@@ -374,28 +374,35 @@ export default function AttendancePage() {
       ) : attendanceData ? (
         <div className="mx-6 pb-6 flex-grow flex flex-col">
           <div className="bg-white rounded-lg shadow overflow-hidden flex-grow">
-            <div className="overflow-auto h-full">
-              <table className="border-separate border-spacing-0 table-fixed">
+            <div className="overflow-auto h-full relative">
+              <table className="border-separate border-spacing-0 table-fixed w-full">
                 <thead className="sticky top-0 z-20">
-                  <tr>
+                  <tr className="shadow-sm">
                     <th
-                      className="sticky left-0 z-30 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-700 border-b"
-                      style={{ width: "200px" }}
+                      className="sticky left-0 z-30 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-700 border-b border-r"
+                      style={{
+                        width: "200px",
+                        boxShadow: "2px 2px 5px -2px rgba(0,0,0,0.1)",
+                      }}
                     >
-                      <div className="flex items-center">
+                      <div className="flex items-center justify-between">
                         <span>Student Name</span>
-                        <ArrowUpDown className="ml-1 h-4 w-4 text-gray-400" />
+                        <ArrowUpDown className="h-4 w-4 text-gray-400" />
                       </div>
                     </th>
                     {attendanceData.lectures.map((lecture) => (
                       <th
                         key={lecture.id}
                         className="px-2 py-3 text-xs font-medium text-gray-700 text-center border-b bg-gray-50 relative group"
-                        style={{ width: "120px", minWidth: "120px" }}
+                        style={{
+                          width: "120px",
+                          minWidth: "120px",
+                          boxShadow: "0 2px 5px -2px rgba(0,0,0,0.1)",
+                        }}
                       >
                         <div className="flex flex-col items-center">
                           <span>{getLectureLabel(lecture)}</span>
-                          <div className="hidden group-hover:block absolute z-50 bg-white shadow-md rounded-md p-3 w-64 -left-16 top-full mt-1 text-left border border-gray-200">
+                          <div className="hidden group-hover:block absolute z-50 bg-white shadow-lg rounded-md p-3 w-64 -left-16 top-full mt-1 text-left border border-gray-200">
                             <div className="text-sm">
                               <p className="font-semibold mb-1 text-blue-700">
                                 {lecture.title}
@@ -432,8 +439,11 @@ export default function AttendancePage() {
                       onClick={() => viewStudentDetails(student.id)}
                     >
                       <td
-                        className="sticky left-0 z-10 bg-white px-4 py-3 text-sm font-medium border-b"
-                        style={{ width: "200px" }}
+                        className="sticky left-0 z-10 bg-white px-4 py-3 text-sm font-medium border-b border-r"
+                        style={{
+                          width: "200px",
+                          boxShadow: "2px 0 5px -2px rgba(0,0,0,0.1)",
+                        }}
                       >
                         {student.name}
                       </td>

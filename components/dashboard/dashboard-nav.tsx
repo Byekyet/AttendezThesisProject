@@ -180,7 +180,7 @@ const navItems: NavItem[] = [
     roles: ["STUDENT"],
   },
   {
-    title: "Request",
+    title: "Manage Requests",
     href: "/requests",
     icon: (
       <svg
@@ -243,24 +243,44 @@ export function DashboardNav({ user }: DashboardNavProps) {
   );
 
   return (
-    <nav className="grid items-start gap-2 w-full">
+    <nav className="grid items-start gap-2 w-full overflow-y-auto">
       {filteredItems.map((item, index) => {
         // Check if this is the last item and add a separator before it
         const isLogoutItem = item.title === "Log out";
 
-        // Simple matching: item is active when the pathname exactly matches the href
-        let isActive = pathname === item.href;
+        // Improved active state logic for all routes
+        let isActive = false;
 
-        // Special case for attendance sub-routes
-        if (
-          item.href === "/attendance" &&
-          pathname.startsWith("/attendance/student")
+        // Exact match for dashboard
+        if (item.href === "/dashboard" && pathname === "/dashboard") {
+          isActive = true;
+        }
+        // Check if pathname starts with the item's href but not just "/"
+        else if (item.href !== "/" && pathname.startsWith(item.href)) {
+          isActive = true;
+        }
+        // Special case for attendance routes
+        else if (
+          (item.href === "/attendance" &&
+            (pathname === "/attendance" ||
+              pathname.startsWith("/attendance/student"))) ||
+          (item.href === "/attendance/take" &&
+            pathname.startsWith("/attendance/take")) ||
+          (item.href === "/attendance/my" &&
+            pathname.startsWith("/attendance/my"))
+        ) {
+          isActive = true;
+        }
+        // Special case for the requests routes
+        else if (
+          item.href === "/requests" &&
+          pathname.startsWith("/requests")
         ) {
           isActive = true;
         }
 
         return (
-          <React.Fragment key={item.href}>
+          <React.Fragment key={item.href + "-" + item.title}>
             {isLogoutItem && (
               <div className="my-3 border-t border-gray-200"></div>
             )}
