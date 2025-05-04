@@ -56,6 +56,7 @@ export default function AttendancePage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [hoveredLecture, setHoveredLecture] = useState<string | null>(null);
 
   const isTeacher = session?.user?.role === "TEACHER";
 
@@ -141,16 +142,23 @@ export default function AttendancePage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "PRESENT":
-        return <span className="text-sm">✓</span>;
+        return <span className="text-xs">✓</span>;
       case "LATE":
-        return <span className="text-sm">⟳</span>;
+        return <span className="text-xs">⟳</span>;
       case "EXCUSED":
-        return <span className="text-sm">E</span>;
+        return <span className="text-xs">E</span>;
       case "ABSENT":
-        return <span className="text-sm">✗</span>;
+        return <span className="text-xs">✗</span>;
       default:
-        return <span className="text-sm">-</span>;
+        return <span className="text-xs">-</span>;
     }
+  };
+
+  // Get week name from date
+  const getWeekName = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const weekNumber = Math.ceil((date.getDate() + 6 - date.getDay()) / 7);
+    return `Week ${weekNumber}`;
   };
 
   // Handle course selection
@@ -334,72 +342,102 @@ export default function AttendancePage() {
           <p className="text-gray-500">Loading attendance data...</p>
         </div>
       ) : attendanceData ? (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="sticky left-0 z-10 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-700 border-b">
-                    <div className="flex items-center">
-                      <span>Student Name</span>
-                      <ArrowUpDown className="ml-1 h-4 w-4 text-gray-400" />
-                    </div>
-                  </th>
-                  <th className="sticky left-[160px] z-10 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-700 border-b">
-                    ID
-                  </th>
-                  {attendanceData.lectures.map((lecture) => (
+        <div
+          className="bg-white rounded-lg shadow overflow-hidden"
+          style={{
+            height: "calc(100vh - 280px)",
+            width: "calc(100vw - 255px)",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <div
+            className="overflow-x-auto flex-1"
+            style={{ position: "relative" }}
+          >
+            <div style={{ display: "inline-block", minWidth: "100%" }}>
+              <table className="border-separate border-spacing-0">
+                <thead>
+                  <tr>
                     <th
-                      key={lecture.id}
-                      className="px-4 py-3 text-sm font-medium text-gray-700 text-center border-b"
+                      className="sticky left-0 z-20 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-700 border-b"
+                      style={{ width: "200px" }}
                     >
-                      <div className="flex flex-col items-center">
-                        <span>{lecture.date}</span>
-                        <span className="text-xs text-gray-500">
-                          {lecture.startTime}-{lecture.endTime}
-                        </span>
+                      <div className="flex items-center">
+                        <span>Student Name</span>
+                        <ArrowUpDown className="ml-1 h-4 w-4 text-gray-400" />
                       </div>
                     </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredStudents.map((student) => (
-                  <tr
-                    key={student.id}
-                    className="hover:bg-gray-50 cursor-pointer"
-                    onClick={() => viewStudentDetails(student.id)}
-                  >
-                    <td className="sticky left-0 z-10 bg-white px-4 py-3 text-sm font-medium border-b">
-                      {student.name}
-                    </td>
-                    <td className="sticky left-[160px] z-10 bg-white px-4 py-3 text-sm text-gray-500 border-b">
-                      {student.id}
-                    </td>
-                    {attendanceData.lectures.map((lecture) => {
-                      const attendance = student.attendances.find(
-                        (att) => att.lectureId === lecture.id
-                      );
-                      const status = attendance?.status || "ABSENT";
-                      return (
-                        <td
-                          key={lecture.id}
-                          className="px-1 py-3 text-center border-b"
-                        >
-                          <div
-                            className={`mx-auto w-8 h-8 rounded-full flex items-center justify-center ${getStatusClass(
-                              status
-                            )}`}
-                          >
-                            {getStatusIcon(status)}
+                    {attendanceData.lectures.map((lecture) => (
+                      <th
+                        key={lecture.id}
+                        className="px-4 py-3 text-sm font-medium text-gray-700 text-center border-b bg-gray-50"
+                        onMouseEnter={() => setHoveredLecture(lecture.id)}
+                        onMouseLeave={() => setHoveredLecture(null)}
+                        style={{ position: "relative", minWidth: "80px" }}
+                      >
+                        <div className="flex flex-col items-center">
+                          <span>{getWeekName(lecture.date)}</span>
+                        </div>
+
+                        {/* Popover for lecture details */}
+                        {hoveredLecture === lecture.id && (
+                          <div className="absolute z-30 bg-white shadow-lg rounded-md p-3 w-56 top-full mt-1 left-1/2 transform -translate-x-1/2">
+                            <div className="text-sm">
+                              <p className="font-medium mb-1">
+                                {lecture.title}
+                              </p>
+                              <p className="text-gray-600">
+                                Date: {lecture.date}
+                              </p>
+                              <p className="text-gray-600">
+                                Time: {lecture.startTime} - {lecture.endTime}
+                              </p>
+                            </div>
                           </div>
-                        </td>
-                      );
-                    })}
+                        )}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {filteredStudents.map((student) => (
+                    <tr
+                      key={student.id}
+                      className="hover:bg-gray-50 cursor-pointer"
+                      onClick={() => viewStudentDetails(student.id)}
+                    >
+                      <td
+                        className="sticky left-0 z-10 bg-white px-4 py-3 text-sm font-medium border-b"
+                        style={{ width: "200px" }}
+                      >
+                        {student.name}
+                      </td>
+                      {attendanceData.lectures.map((lecture) => {
+                        const attendance = student.attendances.find(
+                          (att) => att.lectureId === lecture.id
+                        );
+                        const status = attendance?.status || "ABSENT";
+                        return (
+                          <td
+                            key={lecture.id}
+                            className="px-1 py-3 text-center border-b"
+                          >
+                            <div
+                              className={`mx-auto w-6 h-6 rounded-full flex items-center justify-center ${getStatusClass(
+                                status
+                              )}`}
+                            >
+                              {getStatusIcon(status)}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {/* Legend */}

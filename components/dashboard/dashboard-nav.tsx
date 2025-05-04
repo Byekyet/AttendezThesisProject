@@ -221,28 +221,44 @@ export function DashboardNav({ user }: DashboardNavProps) {
   );
 
   return (
-    <nav className="grid items-start gap-2">
+    <nav className="grid items-start gap-2 w-full">
       {filteredItems.map((item, index) => {
         // Check if this is the last item and add a separator before it
         const isLogoutItem = item.title === "Log out";
+
+        // Simple matching: item is active when the pathname exactly matches the href
+        let isActive = pathname === item.href;
+
+        // Special case for attendance sub-routes
+        if (
+          item.href === "/attendance" &&
+          pathname.startsWith("/attendance/student")
+        ) {
+          isActive = true;
+        }
 
         return (
           <React.Fragment key={item.href}>
             {isLogoutItem && (
               <div className="my-3 border-t border-gray-200"></div>
             )}
-            <Link
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-blue-50",
-                pathname === item.href || pathname.startsWith(`${item.href}/`)
-                  ? "bg-blue-600 text-white hover:bg-blue-700"
-                  : "text-gray-700"
-              )}
-            >
-              {item.icon}
-              {item.title}
-            </Link>
+            <div className="w-full overflow-hidden">
+              <Link
+                href={item.href}
+                style={{ boxSizing: "border-box" }}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-blue-50 w-full border border-transparent",
+                  isActive
+                    ? "bg-blue-600 text-white hover:bg-blue-700 border-blue-600"
+                    : "text-gray-700"
+                )}
+              >
+                <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
+                  {item.icon}
+                </div>
+                <span className="truncate flex-1">{item.title}</span>
+              </Link>
+            </div>
           </React.Fragment>
         );
       })}

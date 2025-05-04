@@ -11,7 +11,7 @@
     "seed": "npx prisma db seed"
   },
   "prisma": {
-    "seed": "node --loader ts-node/esm prisma/seed.ts"
+    "seed": "node --loader ts-node/esm prisma/seed-simple.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.7.0",

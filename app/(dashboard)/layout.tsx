@@ -20,7 +20,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900">
       <div className="flex flex-1 min-h-screen">
-        <aside className="w-[230px] border-r border-gray-100 px-4 py-6 hidden md:block bg-white">
+        <aside className="w-[230px] border-r border-gray-100 px-4 py-6 hidden md:block bg-white overflow-hidden flex-shrink-0">
           <div className="mb-6">
             <Link href="/dashboard" className="flex items-center gap-2 mb-6">
               <span className="bg-blue-600 h-8 w-8 rounded-md flex items-center justify-center">
