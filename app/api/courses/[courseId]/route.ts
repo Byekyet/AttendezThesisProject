@@ -15,7 +15,8 @@ export async function GET(
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const courseId = params.courseId;
+    // Ensure params is awaited if it's a promise
+    const { courseId } = params;
 
     if (!courseId) {
       return NextResponse.json(

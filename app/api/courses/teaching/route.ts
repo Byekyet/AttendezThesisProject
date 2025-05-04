@@ -11,34 +11,30 @@ export async function GET() {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = session.user.id;
+    // Check if the user is a teacher
+    if (session.user.role !== "TEACHER") {
+      return NextResponse.json(
+        { message: "Only teachers can access this endpoint" },
+        { status: 403 }
+      );
+    }
 
-    // Get all courses where the user is enrolled (both as student and teacher)
-    const enrolledCourses = await prisma.courseUser.findMany({
+    // Get all courses where the user is a teacher
+    const teacherCourses = await prisma.courseUser.findMany({
       where: {
-        userId: userId,
+        userId: session.user.id,
+        role: "TEACHER",
       },
       include: {
         course: true,
       },
-      orderBy: {
-        course: {
-          name: "asc",
-        },
-      },
     });
 
-    // Transform the data to the expected format
-    const courses = enrolledCourses.map((enrollment) => ({
-      id: enrollment.course.id,
-      name: enrollment.course.name,
-      code: enrollment.course.code,
-      role: enrollment.role,
-    }));
+    const courses = teacherCourses.map((cu) => cu.course);
 
     return NextResponse.json(courses);
   } catch (error) {
-    console.error("Error fetching enrolled courses:", error);
+    console.error("Error fetching teaching courses:", error);
     return NextResponse.json(
       { message: "Something went wrong" },
       { status: 500 }
