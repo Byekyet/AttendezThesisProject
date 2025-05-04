@@ -56,7 +56,6 @@ export default function AttendancePage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [hoveredLecture, setHoveredLecture] = useState<string | null>(null);
 
   const isTeacher = session?.user?.role === "TEACHER";
 
@@ -391,31 +390,36 @@ export default function AttendancePage() {
                     {attendanceData.lectures.map((lecture) => (
                       <th
                         key={lecture.id}
-                        className="px-2 py-3 text-xs font-medium text-gray-700 text-center border-b bg-gray-50"
-                        onMouseEnter={() => setHoveredLecture(lecture.id)}
-                        onMouseLeave={() => setHoveredLecture(null)}
+                        className="px-2 py-3 text-xs font-medium text-gray-700 text-center border-b bg-gray-50 relative group"
                         style={{ width: "120px", minWidth: "120px" }}
                       >
                         <div className="flex flex-col items-center">
                           <span>{getLectureLabel(lecture)}</span>
-                        </div>
-
-                        {/* Popover for lecture details */}
-                        {hoveredLecture === lecture.id && (
-                          <div className="absolute z-30 bg-white shadow-lg rounded-md p-3 w-56 top-full mt-1 left-1/2 transform -translate-x-1/2">
+                          <div className="hidden group-hover:block absolute z-50 bg-white shadow-md rounded-md p-3 w-64 -left-16 top-full mt-1 text-left border border-gray-200">
                             <div className="text-sm">
-                              <p className="font-medium mb-1">
+                              <p className="font-semibold mb-1 text-blue-700">
                                 {lecture.title}
                               </p>
-                              <p className="text-gray-600">
-                                Date: {lecture.date}
+                              <p className="text-gray-700 mb-1">
+                                <span className="font-medium">Date:</span>{" "}
+                                {new Date(lecture.date).toLocaleDateString(
+                                  "en-US",
+                                  {
+                                    weekday: "long",
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                  }
+                                )}
                               </p>
-                              <p className="text-gray-600">
-                                Time: {lecture.startTime} - {lecture.endTime}
+                              <p className="text-gray-700">
+                                <span className="font-medium">Time:</span>{" "}
+                                {lecture.startTime} - {lecture.endTime}
                               </p>
                             </div>
+                            <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white border-t border-l border-gray-200 rotate-45"></div>
                           </div>
-                        )}
+                        </div>
                       </th>
                     ))}
                   </tr>
