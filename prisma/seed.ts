@@ -8,6 +8,17 @@ import {
   RequestStatus,
 } from "@prisma/client";
 import bcrypt from "bcrypt";
+import { mockCourses } from "../lib/mock-data/courses";
+import { mockStudents } from "../lib/mock-data/students";
+import {
+  getRandomElement,
+  getRandomInt,
+  generateDateForWeekAndDay,
+  generateWeightedAttendanceStatus,
+  generateRandomRequestDescription,
+  generateRandomRequestType,
+  generateRandomRequestStatus,
+} from "../lib/mock-data/utils";
 
 const prisma = new PrismaClient();
 
@@ -23,10 +34,9 @@ async function main() {
 
   console.log("Database cleaned. Starting to seed...");
 
-  // Create 2 users (1 teacher, 1 student)
+  // Create a teacher
   const hashedPassword = await bcrypt.hash("password123", 10);
 
-  // Create teacher
   const teacher = await prisma.user.create({
     data: {
       name: "John Smith",
@@ -38,42 +48,27 @@ async function main() {
   });
   console.log(`Created teacher: ${teacher.name}`);
 
-  // Create student
-  const student = await prisma.user.create({
-    data: {
-      name: "Emma Johnson",
-      email: "student@example.com",
-      password: hashedPassword,
-      role: Role.STUDENT,
-      profileImage: "https://randomuser.me/api/portraits/women/12.jpg",
-    },
-  });
-  console.log(`Created student: ${student.name}`);
+  // Create students (20)
+  const students = [];
+  for (const studentData of mockStudents) {
+    const student = await prisma.user.create({
+      data: {
+        name: studentData.name,
+        email: studentData.email,
+        password: hashedPassword,
+        role: Role.STUDENT,
+        profileImage: studentData.profileImage,
+      },
+    });
+    students.push(student);
+    console.log(`Created student: ${student.name}`);
+  }
 
-  // Create 3 courses
+  // Create courses (5)
   const courses = [];
-  const courseData = [
-    {
-      name: "Introduction to Computer Science",
-      code: "CS101",
-      description:
-        "A foundational course covering basic computer science concepts.",
-    },
-    {
-      name: "Web Development",
-      code: "CS201",
-      description: "Learn modern web development techniques and frameworks.",
-    },
-    {
-      name: "Data Structures and Algorithms",
-      code: "CS301",
-      description: "Advanced course on data structures and algorithm design.",
-    },
-  ];
-
-  for (const data of courseData) {
+  for (const courseData of mockCourses) {
     const course = await prisma.course.create({
-      data,
+      data: courseData,
     });
     courses.push(course);
     console.log(`Created course: ${course.name}`);
@@ -91,177 +86,128 @@ async function main() {
     console.log(`Enrolled ${teacher.name} as teacher in ${course.name}`);
   }
 
-  // Enroll student in all courses
-  for (const course of courses) {
-    await prisma.courseUser.create({
-      data: {
-        userId: student.id,
-        courseId: course.id,
-        role: Role.STUDENT,
-      },
-    });
-    console.log(`Enrolled ${student.name} as student in ${course.name}`);
+  // Enroll students in all courses
+  for (const student of students) {
+    for (const course of courses) {
+      await prisma.courseUser.create({
+        data: {
+          userId: student.id,
+          courseId: course.id,
+          role: Role.STUDENT,
+        },
+      });
+      console.log(`Enrolled ${student.name} as student in ${course.name}`);
+    }
   }
 
-  // Create lectures for each course
-  const now = new Date();
+  // Create lectures for each course (10 weeks, 2 per week per course)
   const lectures = [];
+  const now = new Date();
 
   for (const course of courses) {
-    // Create 5 lectures per course
-    for (let i = 1; i <= 5; i++) {
-      // Alternate between lecture and practice
-      const lectureType =
-        i % 2 === 0 ? LectureType.PRACTICE : LectureType.LECTURE;
-      // Alternate between manual and OTP verification
-      const verifyType = i % 3 === 0 ? VerifyType.OTP : VerifyType.MANUAL;
+    // Create lectures for 10 weeks
+    for (let week = 0; week < 10; week++) {
+      // Two lectures per week: Monday (lecture) and Wednesday (practice)
+      const lectureDate = generateDateForWeekAndDay(week, 1); // Monday
+      const practiceDate = generateDateForWeekAndDay(week, 3); // Wednesday
 
-      // Create date for the lecture (past dates for the first 3, future for the rest)
-      const lectureDate = new Date(now);
-      if (i <= 3) {
-        // Past lecture
-        lectureDate.setDate(lectureDate.getDate() - (10 - i));
-      } else {
-        // Future lecture
-        lectureDate.setDate(lectureDate.getDate() + i);
-      }
+      // Create the lecture (Monday)
+      const lectureStartTime = new Date(lectureDate);
+      lectureStartTime.setHours(9, 0, 0); // 9 AM
 
-      // Start time is 9 AM + i hours
-      const startTime = new Date(lectureDate);
-      startTime.setHours(9 + (i % 8), 0, 0);
-
-      // End time is start time + 1.5 hours
-      const endTime = new Date(startTime);
-      endTime.setMinutes(endTime.getMinutes() + 90);
+      const lectureEndTime = new Date(lectureDate);
+      lectureEndTime.setHours(10, 30, 0); // 10:30 AM
 
       const lecture = await prisma.lecture.create({
         data: {
-          title: `${
-            lectureType === LectureType.LECTURE ? "Lecture" : "Practice"
-          } ${i} - ${course.name}`,
+          title: `Lecture - Week ${10 - week} - ${course.name}`,
           courseId: course.id,
           takenById: teacher.id,
-          type: lectureType,
+          type: LectureType.LECTURE,
           date: lectureDate,
-          startTime,
-          endTime,
-          verifyType,
-          otpCode:
-            verifyType === VerifyType.OTP
-              ? Math.floor(100000 + Math.random() * 900000).toString()
-              : null,
+          startTime: lectureStartTime,
+          endTime: lectureEndTime,
+          verifyType: VerifyType.MANUAL,
         },
       });
 
       lectures.push(lecture);
-      console.log(`Created ${lecture.title} for ${course.name}`);
+      console.log(`Created lecture for ${course.name} - Week ${10 - week}`);
+
+      // Create the practice (Wednesday)
+      const practiceStartTime = new Date(practiceDate);
+      practiceStartTime.setHours(14, 0, 0); // 2 PM
+
+      const practiceEndTime = new Date(practiceDate);
+      practiceEndTime.setHours(15, 30, 0); // 3:30 PM
+
+      const practice = await prisma.lecture.create({
+        data: {
+          title: `Practice - Week ${10 - week} - ${course.name}`,
+          courseId: course.id,
+          takenById: teacher.id,
+          type: LectureType.PRACTICE,
+          date: practiceDate,
+          startTime: practiceStartTime,
+          endTime: practiceEndTime,
+          verifyType: VerifyType.MANUAL,
+        },
+      });
+
+      lectures.push(practice);
+      console.log(`Created practice for ${course.name} - Week ${10 - week}`);
     }
   }
 
-  // Create attendance records for past lectures
+  // Create attendance records for all lectures and all students
   for (const lecture of lectures) {
-    // Only create attendance for past lectures
-    if (lecture.date > now) continue;
+    for (const student of students) {
+      // Generate random attendance status
+      const status = generateWeightedAttendanceStatus();
 
-    // Create attendance for the student
-    const statusOptions = [
-      Status.PRESENT,
-      Status.ABSENT,
-      Status.LATE,
-      Status.EXCUSED,
-    ];
-    const randomStatus =
-      statusOptions[Math.floor(Math.random() * statusOptions.length)];
-
-    await prisma.attendance.create({
-      data: {
-        userId: student.id,
-        lectureId: lecture.id,
-        status: randomStatus,
-      },
-    });
-
-    console.log(
-      `Created attendance record for ${student.name} - ${lecture.title}: ${randomStatus}`
-    );
+      await prisma.attendance.create({
+        data: {
+          userId: student.id,
+          lectureId: lecture.id,
+          status,
+        },
+      });
+    }
+    console.log(`Created attendance records for ${lecture.title}`);
   }
 
-  // Create 5 requests from the student
-  const requestTypes = [
-    RequestType.ABSENCE,
-    RequestType.LATE,
-    RequestType.OTHER,
-  ];
-  const requestDescriptions = [
-    "I was sick and couldn't attend the class",
-    "Had a doctor's appointment",
-    "Family emergency",
-    "Transportation issues",
-    "Internet connection problem during online class",
-  ];
+  // Create 1-5 requests for each student
+  for (const student of students) {
+    const numRequests = getRandomInt(1, 5);
 
-  for (let i = 0; i < 5; i++) {
-    // Pick a random request type
-    const randomType =
-      requestTypes[Math.floor(Math.random() * requestTypes.length)];
-    // Pick a random status
-    const statusOptions = [
-      RequestStatus.PENDING,
-      RequestStatus.APPROVED,
-      RequestStatus.REJECTED,
-    ];
-    const randomStatus =
-      statusOptions[Math.floor(Math.random() * statusOptions.length)];
+    for (let i = 0; i < numRequests; i++) {
+      // Pick a random course
+      const course = getRandomElement(courses);
 
-    // Pick a random lecture (only past lectures)
-    const pastLectures = lectures.filter((l) => l.date <= now);
-    const randomLecture =
-      pastLectures[Math.floor(Math.random() * pastLectures.length)];
+      // Pick a random lecture from that course
+      const courseLectures = lectures.filter(
+        (lecture) => lecture.courseId === course.id
+      );
+      const lecture = getRandomElement(courseLectures);
 
-    // Pick a random course
-    const randomCourse = courses[Math.floor(Math.random() * courses.length)];
+      // Generate request data
+      const requestType = generateRandomRequestType();
+      const requestStatus = generateRandomRequestStatus();
+      const description = generateRandomRequestDescription();
 
-    await prisma.request.create({
-      data: {
-        userId: student.id,
-        type: randomType,
-        description: requestDescriptions[i],
-        status: randomStatus,
-        lectureId: randomLecture?.id || null,
-        courseId: randomCourse.id,
-      },
-    });
-
-    console.log(
-      `Created request for ${student.name}: ${requestDescriptions[i]}`
-    );
-  }
-
-  // Create 3 OTP sessions
-  for (let i = 1; i <= 3; i++) {
-    // Alternate between teacher and student
-    const user = i % 2 === 0 ? teacher : student;
-
-    // Create expiration date (some expired, some active)
-    const expiryDate = new Date();
-    if (i <= 1) {
-      // Expired
-      expiryDate.setHours(expiryDate.getHours() - i);
-    } else {
-      // Active
-      expiryDate.setHours(expiryDate.getHours() + i);
+      await prisma.request.create({
+        data: {
+          userId: student.id,
+          type: requestType,
+          description,
+          status: requestStatus,
+          lectureId: lecture.id,
+          courseId: course.id,
+        },
+      });
     }
 
-    await prisma.otpSession.create({
-      data: {
-        userId: user.id,
-        otp: Math.floor(100000 + Math.random() * 900000).toString(),
-        expiresAt: expiryDate,
-        verified: i % 2 === 0, // Some are verified
-      },
-    });
-
-    console.log(`Created OTP session for ${user.name}`);
+    console.log(`Created ${numRequests} requests for ${student.name}`);
   }
 
   console.log("Seeding completed successfully!");
