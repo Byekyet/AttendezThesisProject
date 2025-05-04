@@ -66,58 +66,16 @@ export default function MarkAttendancePage() {
     }
   };
 
-  const handleVerify = async (otp: string) => {
+  const handleVerify = async (data: any) => {
     if (!selectedCourseId || !selectedScheduleId) {
       setError("Course or schedule information is missing");
       return;
     }
 
-    setError(null);
-    setLoading(true);
-
-    try {
-      console.log(
-        `Verifying OTP: ${otp} for course ${selectedCourseId} and schedule ${selectedScheduleId}`
-      );
-
-      // Send direct verification request with OTP, courseId, and scheduleId
-      const response = await fetch("/api/attendance/verify", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          otp,
-          courseId: selectedCourseId,
-          scheduleId: selectedScheduleId, // Send schedule instead of lecture ID
-        }),
-      });
-
-      const data = await response.json();
-      console.log("Verification response:", data);
-
-      if (!response.ok) {
-        if (response.status === 409) {
-          toast.success("You've already marked attendance for this lecture");
-          setShowVerification(false);
-          setShowSuccess(true);
-          return;
-        }
-
-        throw new Error(data.message || "Failed to verify OTP");
-      }
-
-      // Show success modal on successful verification
-      toast.success("Attendance marked successfully!");
-      setShowVerification(false);
-      setShowSuccess(true);
-    } catch (err: any) {
-      console.error("Verification error:", err);
-      setError(err.message || "An unexpected error occurred");
-      toast.error(err.message || "Failed to verify OTP");
-    } finally {
-      setLoading(false);
-    }
+    // Show success modal on successful verification
+    toast.success("Attendance marked successfully!");
+    setShowVerification(false);
+    setShowSuccess(true);
   };
 
   const handleCloseSuccess = () => {
@@ -160,9 +118,10 @@ export default function MarkAttendancePage() {
 
       {showVerification && (
         <OTPVerification
-          onVerify={handleVerify}
+          onSuccess={handleVerify}
           onClose={() => setShowVerification(false)}
-          error={error}
+          courseId={selectedCourseId!}
+          scheduleId={selectedScheduleId}
           lectureInfo={lectureInfo}
         />
       )}

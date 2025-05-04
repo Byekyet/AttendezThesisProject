@@ -87,30 +87,29 @@ export function CourseSelection({
 
   // For demo purposes, adding mock data
   useEffect(() => {
-    if (courses.length === 0 && !loading) {
-      setCourses([
-        { id: "1", name: "Database Management Systems", code: "INF 202" },
-        { id: "2", name: "Web Development", code: "INF 303" },
-        { id: "3", name: "Data Structures", code: "INF 101" },
-      ]);
-      if (!selectedCourseId) {
-        onCourseSelect("1");
-      }
-    }
-
     if (selectedCourseId && schedules.length === 0 && !loading) {
       setSchedules([
-        { id: "1", day: "Monday", time: "09:00", display: "Monday 09:00" },
         {
-          id: "2",
+          id: "Monday-09:00",
+          day: "Monday",
+          time: "09:00",
+          display: "Monday 09:00",
+        },
+        {
+          id: "Wednesday-14:00",
           day: "Wednesday",
           time: "14:00",
           display: "Wednesday 14:00",
         },
-        { id: "3", day: "Friday", time: "10:30", display: "Friday 10:30" },
+        {
+          id: "Friday-10:30",
+          day: "Friday",
+          time: "10:30",
+          display: "Friday 10:30",
+        },
       ]);
       if (!selectedScheduleId) {
-        onScheduleSelect("1");
+        onScheduleSelect("Monday-09:00");
       }
     }
   }, [

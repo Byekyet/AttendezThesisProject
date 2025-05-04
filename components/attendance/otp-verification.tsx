@@ -1,144 +1,189 @@
-import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
-interface OTPVerificationProps {
-  onVerify: (otp: string) => Promise<void>;
+export interface OTPVerificationProps {
   onClose: () => void;
-  error?: string | null;
-  lectureInfo?: {
-    title: string;
-    course: string;
-  } | null;
+  onSuccess: (data: any) => void;
+  courseId: string;
+  lectureId?: string;
+  scheduleId?: string;
+  lectureInfo?: { title: string; course: string } | null;
 }
 
 export function OTPVerification({
-  onVerify,
   onClose,
-  error,
+  onSuccess,
+  courseId,
+  lectureId,
+  scheduleId,
   lectureInfo,
 }: OTPVerificationProps) {
   const [digits, setDigits] = useState<string[]>(["", "", "", "", "", ""]);
-  const [isVerifying, setIsVerifying] = useState(false);
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const inputRefs = useRef<Array<HTMLInputElement | null>>(Array(6).fill(null));
 
-  const handleChange = (index: number, value: string) => {
-    if (value.length > 1 || !/^\d*$/.test(value)) return;
+  // Function to handle ref assignments
+  const setRef = (index: number) => (el: HTMLInputElement | null) => {
+    inputRefs.current[index] = el;
+  };
 
+  // Focus management and digit handling
+  const handleDigitChange = (index: number, value: string) => {
+    // Only allow numbers
+    if (!/^\d*$/.test(value)) return;
+
+    // Update the digits array
     const newDigits = [...digits];
-    newDigits[index] = value;
+    newDigits[index] = value.slice(0, 1); // Take only first character
     setDigits(newDigits);
 
-    // Auto-focus next input if value is entered
+    // If value is entered and not the last input, focus next input
     if (value && index < 5) {
-      const nextInput = document.getElementById(`otp-input-${index + 1}`);
-      if (nextInput) {
-        nextInput.focus();
-      }
+      inputRefs.current[index + 1]?.focus();
     }
   };
 
-  // Handle paste event for the entire OTP
-  const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData("text");
-    const pastedDigits = pastedData.replace(/\D/g, "").split("").slice(0, 6);
-
-    const newDigits = [...digits];
-    pastedDigits.forEach((digit, index) => {
-      if (index < 6) {
-        newDigits[index] = digit;
-      }
-    });
-
-    setDigits(newDigits);
+  const handleKeyDown = (
+    index: number,
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) => {
+    // If backspace is pressed and current field is empty, focus previous field
+    if (e.key === "Backspace" && !digits[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
   };
 
-  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    // Handle backspace to go to previous input
-    if (e.key === "Backspace" && !digits[index] && index > 0) {
-      const prevInput = document.getElementById(`otp-input-${index - 1}`);
-      if (prevInput) {
-        prevInput.focus();
-      }
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text").trim();
+
+    // Only process if it looks like a numeric code
+    if (!/^\d+$/.test(pastedData)) return;
+
+    // Fill in the digits array with the pasted data
+    const newDigits = [...digits];
+    const pastedChars = pastedData.split("");
+
+    // Fill as many digits as possible
+    for (let i = 0; i < Math.min(6, pastedChars.length); i++) {
+      newDigits[i] = pastedChars[i];
+    }
+
+    setDigits(newDigits);
+
+    // Focus the appropriate input after pasting
+    if (pastedChars.length < 6) {
+      inputRefs.current[pastedChars.length]?.focus();
+    } else {
+      // Focus the last input if all digits are filled
+      inputRefs.current[5]?.focus();
     }
   };
 
   const handleSubmit = async () => {
     const otp = digits.join("");
-    if (otp.length !== 6) return;
 
-    setIsVerifying(true);
+    if (otp.length !== 6) {
+      setError("Please enter all 6 digits");
+      return;
+    }
+
     try {
+      setIsSubmitting(true);
+      setError("");
+
       console.log(`Submitting OTP: ${otp}`);
-      await onVerify(otp);
+
+      const response = await fetch("/api/attendance/verify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          otp,
+          courseId,
+          lectureId,
+          scheduleId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to verify attendance");
+      }
+
+      const data = await response.json();
+      onSuccess(data);
     } catch (error) {
-      console.error("Verification failed:", error);
+      console.error("Error verifying attendance:", error);
+      setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
-      setIsVerifying(false);
+      setIsSubmitting(false);
     }
   };
 
+  // Focus first input on mount
   useEffect(() => {
-    // Auto-focus first input on component mount
-    const firstInput = document.getElementById("otp-input-0");
-    if (firstInput) {
-      firstInput.focus();
-    }
+    const timer = setTimeout(() => {
+      inputRefs.current[0]?.focus();
+    }, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-md p-6 relative">
-        <button
-          onClick={onClose}
-          className="absolute right-4 top-4 text-gray-500 hover:text-gray-700"
-          aria-label="Close"
-        >
-          <X size={20} />
-        </button>
-
-        <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold">Verification</h2>
-
+      <Card className="w-full max-w-md bg-white">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">Verification</CardTitle>
           {lectureInfo && (
-            <div className="mt-2 mb-3 text-sm">
+            <div className="mt-2 text-sm">
               <p className="font-medium text-blue-600">{lectureInfo.course}</p>
               <p className="text-gray-700">{lectureInfo.title}</p>
             </div>
           )}
-
           <p className="text-gray-600 mt-2">
             Please type the one-time password to mark your attendance
           </p>
-        </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-center gap-2 mb-6">
+            {digits.map((digit, index) => (
+              <input
+                key={index}
+                ref={setRef(index)}
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={digit}
+                maxLength={1}
+                onChange={(e) => handleDigitChange(index, e.target.value)}
+                onKeyDown={(e) => handleKeyDown(index, e)}
+                onPaste={index === 0 ? handlePaste : undefined}
+                className="w-12 h-14 text-center text-xl font-semibold border rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+              />
+            ))}
+          </div>
 
-        <div className="flex justify-center gap-2 mb-6">
-          {digits.map((digit, index) => (
-            <input
-              key={index}
-              id={`otp-input-${index}`}
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={1}
-              value={digit}
-              onChange={(e) => handleChange(index, e.target.value)}
-              onKeyDown={(e) => handleKeyDown(index, e)}
-              onPaste={index === 0 ? handlePaste : undefined}
-              className="w-12 h-14 text-center text-xl font-semibold border rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-            />
-          ))}
-        </div>
-
-        {error && <p className="text-red-500 text-center mb-4">{error}</p>}
-
-        <button
-          onClick={handleSubmit}
-          disabled={digits.some((d) => !d) || isVerifying}
-          className="w-full bg-blue-600 text-white py-3 rounded-md font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-300"
-        >
-          {isVerifying ? "Verifying..." : "Verify"}
-        </button>
-      </div>
+          {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+        </CardContent>
+        <CardFooter className="flex justify-center">
+          <Button
+            onClick={handleSubmit}
+            disabled={digits.some((d) => !d) || isSubmitting}
+            className="w-full bg-blue-600 text-white py-6 rounded-md font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-300"
+          >
+            {isSubmitting ? "Verifying..." : "Verify"}
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
   );
 }
