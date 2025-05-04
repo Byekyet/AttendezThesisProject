@@ -233,7 +233,6 @@ async function main() {
       profileImage: "https://randomuser.me/api/portraits/men/11.jpg",
     },
   });
-  console.log(`Created teacher: ${teacher.name}`);
 
   // Create students (20)
   const students = [];
@@ -248,7 +247,6 @@ async function main() {
       },
     });
     students.push(student);
-    console.log(`Created student: ${student.name}`);
   }
 
   // Create courses (5)
@@ -258,7 +256,6 @@ async function main() {
       data: courseData,
     });
     courses.push(course);
-    console.log(`Created course: ${course.name}`);
   }
 
   // Enroll teacher in all courses
@@ -270,7 +267,6 @@ async function main() {
         role: Role.TEACHER,
       },
     });
-    console.log(`Enrolled ${teacher.name} as teacher in ${course.name}`);
   }
 
   // Enroll students in all courses
@@ -283,7 +279,6 @@ async function main() {
           role: Role.STUDENT,
         },
       });
-      console.log(`Enrolled ${student.name} as student in ${course.name}`);
     }
   }
 
@@ -318,7 +313,6 @@ async function main() {
       });
 
       lectures.push(lecture);
-      console.log(`Created lecture for ${course.name} - Week ${10 - week}`);
 
       // Create the practice (Wednesday)
       const practiceStartTime = new Date(practiceDate);
@@ -341,69 +335,116 @@ async function main() {
       });
 
       lectures.push(practice);
-      console.log(`Created practice for ${course.name} - Week ${10 - week}`);
     }
   }
 
   // Create attendance records for all lectures and all students
   for (const lecture of lectures) {
-    for (const student of students) {
-      // Generate random attendance status
-      const status = generateWeightedAttendanceStatus();
-
-      await prisma.attendance.create({
-        data: {
-          userId: student.id,
-          lectureId: lecture.id,
-          status,
-        },
+    try {
+      // Verify the lecture exists in the database
+      const verifyLecture = await prisma.lecture.findUnique({
+        where: { id: lecture.id },
       });
+
+      if (!verifyLecture) {
+        console.error(
+          `Lecture ${lecture.id} not found in database, skipping attendance creation`
+        );
+        continue;
+      }
+
+      for (const student of students) {
+        try {
+          // Generate random attendance status
+          const status = generateWeightedAttendanceStatus();
+
+          await prisma.attendance.create({
+            data: {
+              userId: student.id,
+              lectureId: lecture.id,
+              status,
+            },
+          });
+        } catch (error) {
+          console.error(
+            `Error creating attendance for student ${student.id}, lecture ${lecture.id}:`,
+            error
+          );
+        }
+      }
+    } catch (error) {
+      console.error(`Error processing lecture ${lecture.id}:`, error);
     }
-    console.log(`Created attendance records for ${lecture.title}`);
   }
 
   // Create 1-2 requests for each student
   for (const student of students) {
-    const numRequests = getRandomInt(1, 2);
+    try {
+      const numRequests = getRandomInt(1, 2);
+      let createdRequests = 0;
 
-    for (let i = 0; i < numRequests; i++) {
-      // Pick a random course
-      const course = getRandomElement(courses);
+      for (let i = 0; i < numRequests; i++) {
+        try {
+          // Pick a random course
+          const course = getRandomElement(courses);
 
-      // Pick a random lecture from that course
-      const courseLectures = lectures.filter(
-        (lecture) => lecture.courseId === course.id
+          // Pick a random lecture from that course
+          const courseLectures = lectures.filter(
+            (lecture) => lecture.courseId === course.id
+          );
+          const lecture = getRandomElement(courseLectures);
+
+          // Verify the lecture exists in the database
+          const verifyLecture = await prisma.lecture.findUnique({
+            where: { id: lecture.id },
+          });
+
+          if (!verifyLecture) {
+            console.error(
+              `Lecture ${lecture.id} not found in database, skipping request creation`
+            );
+            continue;
+          }
+
+          // Generate request data
+          const requestType = getRandomElement([
+            RequestType.ABSENCE,
+            RequestType.LATE,
+            RequestType.RE_REGISTRATION,
+            RequestType.LEAVE,
+            RequestType.OTHER,
+          ]);
+          const requestStatus = getRandomElement([
+            RequestStatus.PENDING,
+            RequestStatus.APPROVED,
+            RequestStatus.REJECTED,
+          ]);
+          const description = getRandomElement(REQUEST_DESCRIPTIONS);
+
+          await prisma.request.create({
+            data: {
+              userId: student.id,
+              type: requestType,
+              description,
+              status: requestStatus,
+              lectureId: lecture.id,
+              courseId: course.id,
+            },
+          });
+          createdRequests++;
+        } catch (error) {
+          console.error(
+            `Error creating request for student ${student.id}:`,
+            error
+          );
+        }
+      }
+    } catch (error) {
+      console.error(
+        `Error processing student ${student.id} for requests:`,
+        error
       );
-      const lecture = getRandomElement(courseLectures);
-
-      // Generate request data
-      const requestType = getRandomElement([
-        RequestType.ABSENCE,
-        RequestType.LATE,
-        RequestType.RE_REGISTRATION,
-        RequestType.LEAVE,
-        RequestType.OTHER,
-      ]);
-      const requestStatus = getRandomElement([
-        RequestStatus.PENDING,
-        RequestStatus.APPROVED,
-        RequestStatus.REJECTED,
-      ]);
-      const description = getRandomElement(REQUEST_DESCRIPTIONS);
-
-      await prisma.request.create({
-        data: {
-          userId: student.id,
-          type: requestType,
-          description,
-          status: requestStatus,
-          lectureId: lecture.id,
-          courseId: course.id,
-        },
-      });
     }
-
-    console.log(`Created ${numRequests} requests for ${student.name}`);
   }
 
   console.log("Seeding completed successfully!");
