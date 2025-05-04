@@ -5,6 +5,7 @@ import { CourseSelection } from "@/components/attendance/course-selection";
 import { OTPVerification } from "@/components/attendance/otp-verification";
 import { SuccessModal } from "@/components/attendance/success-modal";
 import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
 
 export default function MarkAttendancePage() {
   const router = useRouter();
@@ -14,14 +15,20 @@ export default function MarkAttendancePage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [lectureInfo, setLectureInfo] = useState<{
+    title: string;
+    course: string;
+  } | null>(null);
 
   const handleCourseSelect = useCallback((courseId: string) => {
     setSelectedCourseId(courseId);
     setSelectedScheduleId(undefined);
+    setError(null);
   }, []);
 
   const handleScheduleSelect = useCallback((scheduleId: string) => {
     setSelectedScheduleId(scheduleId);
+    setError(null);
   }, []);
 
   const handleMarkAttendance = async () => {
@@ -31,32 +38,49 @@ export default function MarkAttendancePage() {
     }
 
     setError(null);
-    setLoading(true);
 
+    // Extract course and schedule info for display
     try {
-      // Check if there's an active lecture for this course and schedule
-      const response = await fetch(
-        `/api/attendance/check?courseId=${selectedCourseId}&scheduleId=${selectedScheduleId}`
-      );
+      // Get course name from CourseSelection component state (simplified)
+      const courseElement = document.getElementById("course-select");
+      const courseName = courseElement
+        ? (courseElement as HTMLSelectElement).selectedOptions[0].text
+        : "Selected Course";
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Failed to check attendance status");
-      }
+      // Get schedule info
+      const scheduleElement = document.getElementById("schedule-select");
+      const scheduleName = scheduleElement
+        ? (scheduleElement as HTMLSelectElement).selectedOptions[0].text
+        : selectedScheduleId;
 
-      // If we get here, we should show the verification dialog
+      setLectureInfo({
+        title: scheduleName,
+        course: courseName,
+      });
+
+      // Show OTP verification modal immediately
       setShowVerification(true);
     } catch (err: any) {
+      console.error("Error preparing attendance:", err);
       setError(err.message || "An unexpected error occurred");
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleVerify = async (otp: string) => {
+    if (!selectedCourseId || !selectedScheduleId) {
+      setError("Course or schedule information is missing");
+      return;
+    }
+
     setError(null);
+    setLoading(true);
 
     try {
+      console.log(
+        `Verifying OTP: ${otp} for course ${selectedCourseId} and schedule ${selectedScheduleId}`
+      );
+
+      // Send direct verification request with OTP, courseId, and scheduleId
       const response = await fetch("/api/attendance/verify", {
         method: "POST",
         headers: {
@@ -65,21 +89,34 @@ export default function MarkAttendancePage() {
         body: JSON.stringify({
           otp,
           courseId: selectedCourseId,
-          scheduleId: selectedScheduleId,
+          scheduleId: selectedScheduleId, // Send schedule instead of lecture ID
         }),
       });
 
       const data = await response.json();
+      console.log("Verification response:", data);
 
       if (!response.ok) {
+        if (response.status === 409) {
+          toast.success("You've already marked attendance for this lecture");
+          setShowVerification(false);
+          setShowSuccess(true);
+          return;
+        }
+
         throw new Error(data.message || "Failed to verify OTP");
       }
 
       // Show success modal on successful verification
+      toast.success("Attendance marked successfully!");
       setShowVerification(false);
       setShowSuccess(true);
     } catch (err: any) {
+      console.error("Verification error:", err);
       setError(err.message || "An unexpected error occurred");
+      toast.error(err.message || "Failed to verify OTP");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -116,7 +153,7 @@ export default function MarkAttendancePage() {
             disabled={loading || !selectedCourseId || !selectedScheduleId}
             className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
           >
-            {loading ? "Checking..." : "Mark attendance"}
+            {loading ? "Processing..." : "Proceed to verification"}
           </button>
         </div>
       </div>
@@ -126,6 +163,7 @@ export default function MarkAttendancePage() {
           onVerify={handleVerify}
           onClose={() => setShowVerification(false)}
           error={error}
+          lectureInfo={lectureInfo}
         />
       )}
 

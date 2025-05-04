@@ -33,6 +33,7 @@ model Course {
   users       CourseUser[]
   lectures    Lecture[]
   requests    Request[]
+  OtpSession  OtpSession[]
 }
 
 model CourseUser {
@@ -64,6 +65,7 @@ model Lecture {
   attendances Attendance[]
   course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
   takenBy     User         @relation("LectureTakenBy", fields: [takenById], references: [id])
+  OtpSession  OtpSession[]
 }
 
 model Attendance {
@@ -97,11 +99,17 @@ model Request {
 model OtpSession {
   id        String   @id @default(cuid())
   userId    String
+  courseId  String
+  lectureId String
   otp       String
   expiresAt DateTime
   verified  Boolean  @default(false)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lecture   Lecture  @relation(fields: [lectureId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lectureId])
 }
 
 enum Role {

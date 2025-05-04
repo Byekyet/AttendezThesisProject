@@ -16,6 +16,7 @@ import { Check, X, ArrowLeft } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { Status } from "@prisma/client";
 import { format } from "date-fns";
+import { GenerateOTP } from "@/components/attendance/generate-otp";
 
 interface Student {
   id: string;
@@ -206,6 +207,10 @@ export default function ManualAttendancePage() {
     }
   };
 
+  const handleLectureSelect = (lecture: Lecture) => {
+    setSelectedLecture(lecture);
+  };
+
   if (loading && !course) {
     return (
       <div className="container mx-auto py-8">
@@ -379,84 +384,135 @@ export default function ManualAttendancePage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Attendance</CardTitle>
+              <CardTitle>
+                {selectedLecture.title} -{" "}
+                {new Date(selectedLecture.date).toLocaleDateString()}
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              {loading ? (
-                <div className="space-y-3">
-                  <div className="h-10 bg-gray-200 w-full rounded animate-pulse"></div>
-                  <div className="h-10 bg-gray-200 w-full rounded animate-pulse"></div>
-                  <div className="h-10 bg-gray-200 w-full rounded animate-pulse"></div>
-                </div>
-              ) : (
-                <>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Student Name</TableHead>
-                        <TableHead className="text-center">Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {students.map((student, index) => (
-                        <TableRow key={student.id}>
-                          <TableCell>180103306</TableCell>
-                          <TableCell>{student.name}</TableCell>
-                          <TableCell>
-                            <div className="flex space-x-2 justify-center">
-                              <Button
-                                size="icon"
-                                variant={
-                                  attendanceStatus[student.id] ===
-                                  Status.PRESENT
-                                    ? "default"
-                                    : "outline"
-                                }
-                                className="rounded-full h-8 w-8"
-                                onClick={() =>
-                                  handleAttendanceChange(
-                                    student.id,
-                                    Status.PRESENT
-                                  )
-                                }
-                              >
-                                <Check className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="icon"
-                                variant={
-                                  attendanceStatus[student.id] === Status.ABSENT
-                                    ? "destructive"
-                                    : "outline"
-                                }
-                                className="rounded-full h-8 w-8"
-                                onClick={() =>
-                                  handleAttendanceChange(
-                                    student.id,
-                                    Status.ABSENT
-                                  )
-                                }
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <Card className="md:col-span-2">
+                  <CardHeader>
+                    <CardTitle>
+                      {selectedLecture.title} -{" "}
+                      {new Date(selectedLecture.date).toLocaleDateString()}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium">Start Time:</span>{" "}
+                        {new Date(
+                          selectedLecture.startTime
+                        ).toLocaleTimeString()}
+                      </div>
+                      <div>
+                        <span className="font-medium">End Time:</span>{" "}
+                        {new Date(selectedLecture.endTime).toLocaleTimeString()}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
-                  <div className="mt-6 flex justify-end">
-                    <Button
-                      onClick={saveAttendance}
-                      disabled={saving || students.length === 0}
-                    >
-                      {saving ? "Saving..." : "Save Attendance"}
-                    </Button>
-                  </div>
-                </>
-              )}
+                <div className="md:col-span-1">
+                  <GenerateOTP
+                    courseId={courseId}
+                    lectureId={selectedLecture.id}
+                    onSuccess={(otp) => {
+                      toast({
+                        title: "OTP Generated",
+                        description: `Share this code with students: ${otp}`,
+                      });
+                    }}
+                  />
+                </div>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Student Attendance</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="space-y-3">
+                      <div className="h-10 bg-gray-200 w-full rounded animate-pulse"></div>
+                      <div className="h-10 bg-gray-200 w-full rounded animate-pulse"></div>
+                      <div className="h-10 bg-gray-200 w-full rounded animate-pulse"></div>
+                    </div>
+                  ) : (
+                    <>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>ID</TableHead>
+                            <TableHead>Student Name</TableHead>
+                            <TableHead className="text-center">
+                              Status
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {students.map((student, index) => (
+                            <TableRow key={student.id}>
+                              <TableCell>180103306</TableCell>
+                              <TableCell>{student.name}</TableCell>
+                              <TableCell>
+                                <div className="flex space-x-2 justify-center">
+                                  <Button
+                                    size="icon"
+                                    variant={
+                                      attendanceStatus[student.id] ===
+                                      Status.PRESENT
+                                        ? "default"
+                                        : "outline"
+                                    }
+                                    className="rounded-full h-8 w-8"
+                                    onClick={() =>
+                                      handleAttendanceChange(
+                                        student.id,
+                                        Status.PRESENT
+                                      )
+                                    }
+                                  >
+                                    <Check className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="icon"
+                                    variant={
+                                      attendanceStatus[student.id] ===
+                                      Status.ABSENT
+                                        ? "destructive"
+                                        : "outline"
+                                    }
+                                    className="rounded-full h-8 w-8"
+                                    onClick={() =>
+                                      handleAttendanceChange(
+                                        student.id,
+                                        Status.ABSENT
+                                      )
+                                    }
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+
+                      <div className="mt-6 flex justify-end">
+                        <Button
+                          onClick={saveAttendance}
+                          disabled={saving || students.length === 0}
+                        >
+                          {saving ? "Saving..." : "Save Attendance"}
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
             </CardContent>
           </Card>
         </div>

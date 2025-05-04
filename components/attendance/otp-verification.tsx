@@ -5,12 +5,17 @@ interface OTPVerificationProps {
   onVerify: (otp: string) => Promise<void>;
   onClose: () => void;
   error?: string | null;
+  lectureInfo?: {
+    title: string;
+    course: string;
+  } | null;
 }
 
 export function OTPVerification({
   onVerify,
   onClose,
   error,
+  lectureInfo,
 }: OTPVerificationProps) {
   const [digits, setDigits] = useState<string[]>(["", "", "", "", "", ""]);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -63,6 +68,7 @@ export function OTPVerification({
 
     setIsVerifying(true);
     try {
+      console.log(`Submitting OTP: ${otp}`);
       await onVerify(otp);
     } catch (error) {
       console.error("Verification failed:", error);
@@ -92,6 +98,14 @@ export function OTPVerification({
 
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold">Verification</h2>
+
+          {lectureInfo && (
+            <div className="mt-2 mb-3 text-sm">
+              <p className="font-medium text-blue-600">{lectureInfo.course}</p>
+              <p className="text-gray-700">{lectureInfo.title}</p>
+            </div>
+          )}
+
           <p className="text-gray-600 mt-2">
             Please type the one-time password to mark your attendance
           </p>

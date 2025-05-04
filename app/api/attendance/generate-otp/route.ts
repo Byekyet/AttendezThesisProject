@@ -3,109 +3,102 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 
+// Helper to generate a random N-digit OTP
+function generateOTP(digits: number = 6): string {
+  const min = Math.pow(10, digits - 1);
+  const max = Math.pow(10, digits) - 1;
+  return Math.floor(min + Math.random() * (max - min + 1)).toString();
+}
+
 // POST: Generate OTP for a course attendance
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || !session.user) {
+    if (!session?.user || session.user.role !== "TEACHER") {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    // Only teachers can access this endpoint
-    if (session.user.role !== "TEACHER") {
-      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
-    }
+    const teacherId = session.user.id;
+    const { lectureId, courseId, expirySeconds } = await req.json();
 
-    const { courseId } = await req.json();
-
-    if (!courseId) {
+    if (!lectureId || !courseId) {
       return NextResponse.json(
-        { message: "Course ID is required" },
+        { message: "Lecture ID and Course ID are required" },
         { status: 400 }
       );
     }
 
-    // Check if the teacher is assigned to this course
-    const courseTeacher = await prisma.courseUser.findFirst({
+    // Verify the teacher teaches this course
+    const teacherCourse = await prisma.courseUser.findFirst({
       where: {
-        userId: session.user.id,
+        userId: teacherId,
         courseId: courseId,
         role: "TEACHER",
       },
     });
 
-    if (!courseTeacher) {
+    if (!teacherCourse) {
       return NextResponse.json(
-        { message: "You are not assigned to this course" },
+        { message: "You are not authorized to teach this course" },
         { status: 403 }
       );
     }
 
-    // Generate OTP code (6 digits)
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // Set expiry time (5 minutes from now)
-    const expiryTime = new Date();
-    expiryTime.setMinutes(expiryTime.getMinutes() + 5);
-
-    // Create a new lecture or use an existing one
-    const currentDate = new Date();
-    const startTime = new Date(currentDate);
-    const endTime = new Date(currentDate);
-    endTime.setMinutes(endTime.getMinutes() + 90); // 1.5 hour lecture
-
-    // Check if there's an active lecture in progress
-    const activeLecture = await prisma.lecture.findFirst({
+    // Verify the lecture exists and belongs to this course
+    const lecture = await prisma.lecture.findFirst({
       where: {
+        id: lectureId,
         courseId: courseId,
-        date: {
-          equals: new Date(currentDate.setHours(0, 0, 0, 0)),
-        },
-        startTime: {
-          lte: currentDate,
-        },
-        endTime: {
-          gte: currentDate,
-        },
       },
     });
 
-    let lecture;
-
-    if (activeLecture) {
-      // Update existing lecture with new OTP
-      lecture = await prisma.lecture.update({
-        where: {
-          id: activeLecture.id,
-        },
-        data: {
-          otpCode: otpCode,
-          verifyType: "OTP",
-        },
-      });
-    } else {
-      // Create a new lecture with the OTP
-      lecture = await prisma.lecture.create({
-        data: {
-          title: `${new Date().toLocaleDateString()} Lecture`,
-          courseId: courseId,
-          takenById: session.user.id,
-          type: "LECTURE",
-          date: new Date(currentDate.setHours(0, 0, 0, 0)),
-          startTime: startTime,
-          endTime: endTime,
-          verifyType: "OTP",
-          otpCode: otpCode,
-        },
-      });
+    if (!lecture) {
+      return NextResponse.json(
+        { message: "Lecture not found" },
+        { status: 404 }
+      );
     }
+
+    // Generate a new OTP
+    const otp = generateOTP();
+
+    // Get expiry time from env variable, or use the provided value, or default to 60 seconds
+    const envExpirySeconds = process.env.OTP_EXPIRY_SECONDS
+      ? parseInt(process.env.OTP_EXPIRY_SECONDS)
+      : 60;
+    const otpExpirySeconds = expirySeconds || envExpirySeconds;
+
+    const expiresAt = new Date();
+    expiresAt.setSeconds(expiresAt.getSeconds() + otpExpirySeconds);
+
+    // Update lecture with the new OTP
+    const updatedLecture = await prisma.lecture.update({
+      where: {
+        id: lectureId,
+      },
+      data: {
+        otpCode: otp,
+        verifyType: "OTP",
+      },
+    });
+
+    // Create OTP session
+    const otpSession = await prisma.otpSession.create({
+      data: {
+        userId: teacherId,
+        courseId: courseId,
+        lectureId: lectureId,
+        otp: otp,
+        expiresAt: expiresAt,
+        verified: false,
+      },
+    });
 
     return NextResponse.json({
       message: "OTP generated successfully",
-      otp: otpCode,
-      lectureId: lecture.id,
-      expiry: expiryTime,
+      otp: otp,
+      expiresAt: expiresAt,
     });
   } catch (error) {
     console.error("Error generating OTP:", error);
