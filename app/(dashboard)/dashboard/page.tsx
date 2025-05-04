@@ -260,12 +260,6 @@ export default function DashboardPage() {
                 Take attendance
               </Button>
             </Link>
-            <Link href="/course/new">
-              <Button variant="outline" size="sm">
-                <BookOpen className="h-4 w-4 mr-2" />
-                Create course
-              </Button>
-            </Link>
           </div>
         )}
         {dashboardData.user.role === "STUDENT" && (
