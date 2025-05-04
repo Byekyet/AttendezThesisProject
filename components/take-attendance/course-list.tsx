@@ -36,7 +36,7 @@ export default function CourseList({ onSelectCourse, mode }: CourseListProps) {
     const fetchCourses = async () => {
       try {
         setLoading(true);
-        const response = await fetch("/api/courses");
+        const response = await fetch("/api/courses/teaching");
 
         if (!response.ok) {
           throw new Error("Failed to fetch courses");
