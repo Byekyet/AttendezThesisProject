@@ -91,13 +91,13 @@ export default function LoginPage() {
   return (
     <div>
       <div className="flex justify-center mb-8">
-        <Image
+        {/* <Image
           src="/ui-images/Login.png"
           alt="Login"
           width={100}
           height={100}
           className="h-16 w-auto"
-        />
+        /> */}
       </div>
       <h1 className="text-2xl font-semibold mb-6 text-center">
         Log in to Attendez

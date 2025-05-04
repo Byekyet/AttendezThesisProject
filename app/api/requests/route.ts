@@ -20,9 +20,6 @@ export async function GET() {
       where: {
         userId: userId,
       },
-      include: {
-        course: true,
-      },
       orderBy: {
         createdAt: "desc",
       },
@@ -34,8 +31,6 @@ export async function GET() {
       type: request.type,
       description: request.description,
       status: request.status,
-      courseCode: request.course.code,
-      courseName: request.course.name,
       requestDate: request.createdAt.toISOString().split("T")[0],
     }));
 
@@ -61,14 +56,21 @@ export async function POST(req: Request) {
     const userId = session.user.id;
     const { type, description, courseId, scheduleId } = await req.json();
 
-    if (!type || !description || !courseId) {
+    if (!type || !description) {
       return NextResponse.json(
-        { message: "Type, description and course are required" },
+        { message: "Type and description are required" },
         { status: 400 }
       );
     }
 
-    // Check if the user is enrolled in this course
+    if (!courseId) {
+      return NextResponse.json(
+        { message: "Course ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // Check if the user is enrolled in this course if courseId is provided
     const enrollment = await prisma.courseUser.findFirst({
       where: {
         userId: userId,
@@ -87,13 +89,10 @@ export async function POST(req: Request) {
     const request = await prisma.request.create({
       data: {
         userId: userId,
+        courseId: courseId,
         type: type as RequestType,
         description: description,
-        courseId: courseId,
-        scheduleId: scheduleId || undefined,
-      },
-      include: {
-        course: true,
+        lectureId: scheduleId,
       },
     });
 
@@ -104,8 +103,6 @@ export async function POST(req: Request) {
         type: request.type,
         description: request.description,
         status: request.status,
-        courseCode: request.course.code,
-        courseName: request.course.name,
         requestDate: request.createdAt.toISOString().split("T")[0],
       },
     });

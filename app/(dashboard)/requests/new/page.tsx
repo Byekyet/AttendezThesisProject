@@ -103,10 +103,6 @@ export default function NewRequestPage() {
   // Use mock data if needed
   useEffect(() => {
     if (courses.length === 0 && !loadingData) {
-      setCourses([
-        { id: "1", name: "Database Management Systems 1", code: "INF 202" },
-        { id: "2", name: "Web Development", code: "INF 303" },
-      ]);
       setSelectedCourseId("1");
     }
   }, [courses, loadingData]);
