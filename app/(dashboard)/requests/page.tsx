@@ -2,7 +2,13 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
+import { useSession } from "next-auth/react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  MoreHorizontal,
+  Filter,
+} from "lucide-react";
 
 interface Request {
   id: string;
@@ -11,17 +17,23 @@ interface Request {
   courseName: string;
   requestDate: string;
   status: string;
+  userName?: string;
+  description?: string;
 }
 
 export default function RequestsPage() {
+  const { data: session } = useSession();
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [filter, setFilter] = useState<string>("ALL");
   const itemsPerPage = 10;
 
-  // Fetch the user's requests
+  const isTeacher = session?.user?.role === "TEACHER";
+
+  // Fetch the requests
   useEffect(() => {
     const fetchRequests = async () => {
       try {
@@ -43,69 +55,18 @@ export default function RequestsPage() {
     fetchRequests();
   }, []);
 
-  // For demo purposes - add mock data if no requests are found
-  useEffect(() => {
-    if (requests.length === 0 && !loading && !error) {
-      const mockRequests: Request[] = [
-        {
-          id: "001",
-          type: "RE_REGISTRATION",
-          courseCode: "INF 303",
-          courseName: "Database management system 1",
-          requestDate: "2025.03.02",
-          status: "NEW",
-        },
-        {
-          id: "002",
-          type: "LEAVE",
-          courseCode: "INF 303",
-          courseName: "Database management system 1",
-          requestDate: "2025.03.02",
-          status: "APPROVED",
-        },
-        {
-          id: "003",
-          type: "RE_REGISTRATION",
-          courseCode: "INF 303",
-          courseName: "Database management system 1",
-          requestDate: "2025.03.02",
-          status: "NEW",
-        },
-        {
-          id: "004",
-          type: "RE_REGISTRATION",
-          courseCode: "INF 303",
-          courseName: "Database management system 1",
-          requestDate: "2025.03.02",
-          status: "NEW",
-        },
-        {
-          id: "005",
-          type: "RE_REGISTRATION",
-          courseCode: "INF 303",
-          courseName: "Database management system 1",
-          requestDate: "2025.03.02",
-          status: "REJECTED",
-        },
-        {
-          id: "006",
-          type: "REGISTRATION",
-          courseCode: "INF 303",
-          courseName: "Database management system 1",
-          requestDate: "2025.03.02",
-          status: "REJECTED",
-        },
-      ];
-      setRequests(mockRequests);
-      setTotalPages(Math.ceil(mockRequests.length / itemsPerPage));
-    }
-  }, [requests, loading, error]);
+  // Filter requests based on status
+  const getFilteredRequests = () => {
+    if (filter === "ALL") return requests;
+    return requests.filter((req) => req.status === filter);
+  };
 
   // Get paginated requests
   const getPaginatedRequests = () => {
+    const filteredRequests = getFilteredRequests();
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    return requests.slice(startIndex, endIndex);
+    return filteredRequests.slice(startIndex, endIndex);
   };
 
   // Handle pagination
@@ -132,6 +93,18 @@ export default function RequestsPage() {
     }
   };
 
+  // Handle request review
+  const handleReviewRequest = (requestId: string) => {
+    // Navigate to review page
+    window.location.href = `/requests/review/${requestId}`;
+  };
+
+  // Handle request view
+  const handleViewRequest = (requestId: string) => {
+    // Navigate to view page
+    window.location.href = `/requests/view/${requestId}`;
+  };
+
   // Status badge component
   const StatusBadge = ({ status }: { status: string }) => {
     let classes = "inline-block px-2 py-1 text-xs font-medium rounded-full ";
@@ -143,7 +116,6 @@ export default function RequestsPage() {
       case "REJECTED":
         classes += "bg-red-100 text-red-800";
         break;
-      case "NEW":
       case "PENDING":
       default:
         classes += "bg-blue-100 text-blue-800";
@@ -166,34 +138,62 @@ export default function RequestsPage() {
   }
 
   const paginatedRequests = getPaginatedRequests();
-  const totalItems = requests.length;
+  const filteredRequests = getFilteredRequests();
+  const totalItems = filteredRequests.length;
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">My requests</h1>
+        <h1 className="text-2xl font-bold">
+          {isTeacher ? "Student Requests" : "My Requests"}
+        </h1>
         <div className="flex space-x-2">
-          <button className="px-4 py-2 bg-blue-600 text-white rounded font-medium">
-            My requests
-          </button>
-          <Link
-            href="/requests/new"
-            className="px-4 py-2 bg-white text-gray-800 border border-gray-300 rounded font-medium hover:bg-gray-50"
-          >
-            Send request
-          </Link>
+          {!isTeacher && (
+            <>
+              <button className="px-4 py-2 bg-blue-600 text-white rounded font-medium">
+                My requests
+              </button>
+              <Link
+                href="/requests/new"
+                className="px-4 py-2 bg-white text-gray-800 border border-gray-300 rounded font-medium hover:bg-gray-50"
+              >
+                Send request
+              </Link>
+            </>
+          )}
+          {isTeacher && (
+            <div className="flex items-center space-x-2">
+              <Filter className="h-4 w-4 text-gray-500" />
+              <select
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
+              >
+                <option value="ALL">All requests</option>
+                <option value="PENDING">Pending</option>
+                <option value="APPROVED">Approved</option>
+                <option value="REJECTED">Rejected</option>
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
-      {requests.length === 0 ? (
+      {totalItems === 0 ? (
         <div className="text-center py-12 bg-white rounded-lg shadow">
-          <p className="text-gray-500">You have no requests yet.</p>
-          <Link
-            href="/requests/new"
-            className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded font-medium"
-          >
-            Create a Request
-          </Link>
+          <p className="text-gray-500">
+            {isTeacher
+              ? "There are no requests for your courses."
+              : "You have no requests yet."}
+          </p>
+          {!isTeacher && (
+            <Link
+              href="/requests/new"
+              className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded font-medium"
+            >
+              Create a Request
+            </Link>
+          )}
         </div>
       ) : (
         <>
@@ -214,10 +214,18 @@ export default function RequestsPage() {
                     <th className="px-4 py-3 text-sm font-medium">
                       Course name
                     </th>
+                    {isTeacher && (
+                      <th className="px-4 py-3 text-sm font-medium">
+                        Student name
+                      </th>
+                    )}
                     <th className="px-4 py-3 text-sm font-medium">
                       Request date
                     </th>
                     <th className="px-4 py-3 text-sm font-medium">Status</th>
+                    {isTeacher && (
+                      <th className="px-4 py-3 text-sm font-medium">Action</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -233,12 +241,36 @@ export default function RequestsPage() {
                       <td className="px-4 py-3 text-sm">
                         {request.courseName}
                       </td>
+                      {isTeacher && (
+                        <td className="px-4 py-3 text-sm">
+                          {request.userName}
+                        </td>
+                      )}
                       <td className="px-4 py-3 text-sm">
                         {request.requestDate}
                       </td>
                       <td className="px-4 py-3 text-sm">
                         <StatusBadge status={request.status} />
                       </td>
+                      {isTeacher && (
+                        <td className="px-4 py-3 text-sm">
+                          {request.status === "PENDING" ? (
+                            <button
+                              onClick={() => handleReviewRequest(request.id)}
+                              className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                            >
+                              Review
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleViewRequest(request.id)}
+                              className="px-3 py-1 bg-gray-200 text-gray-800 text-xs rounded hover:bg-gray-300"
+                            >
+                              View
+                            </button>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -248,75 +280,92 @@ export default function RequestsPage() {
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200">
-                <div className="text-sm text-gray-700">
-                  Showing{" "}
-                  <span className="font-medium">
-                    {(currentPage - 1) * itemsPerPage + 1}
-                  </span>{" "}
-                  to{" "}
-                  <span className="font-medium">
-                    {Math.min(currentPage * itemsPerPage, totalItems)}
-                  </span>{" "}
-                  of <span className="font-medium">{totalItems}</span> results
-                </div>
-                <div className="flex space-x-1">
+                <div className="flex-1 flex justify-between sm:hidden">
                   <button
                     onClick={() => goToPage(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="px-2 py-1 rounded border border-gray-300 text-gray-700 disabled:opacity-50"
+                    className={`${
+                      currentPage === 1
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-white text-gray-700 hover:bg-gray-50"
+                    } relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md`}
                   >
-                    <ChevronLeft size={16} />
+                    Previous
                   </button>
-
-                  {/* Page numbers */}
-                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                    let pageNumber;
-                    if (totalPages <= 5) {
-                      pageNumber = i + 1;
-                    } else if (currentPage <= 3) {
-                      pageNumber = i + 1;
-                    } else if (currentPage >= totalPages - 2) {
-                      pageNumber = totalPages - 4 + i;
-                    } else {
-                      pageNumber = currentPage - 2 + i;
-                    }
-
-                    return (
-                      <button
-                        key={pageNumber}
-                        onClick={() => goToPage(pageNumber)}
-                        className={`px-3 py-1 rounded ${
-                          currentPage === pageNumber
-                            ? "bg-blue-600 text-white"
-                            : "border border-gray-300 text-gray-700"
-                        }`}
-                      >
-                        {pageNumber}
-                      </button>
-                    );
-                  })}
-
-                  {totalPages > 5 && currentPage < totalPages - 2 && (
-                    <>
-                      <button className="px-3 py-1 border border-gray-300 rounded">
-                        <MoreHorizontal size={16} />
-                      </button>
-                      <button
-                        onClick={() => goToPage(totalPages)}
-                        className="px-3 py-1 border border-gray-300 rounded"
-                      >
-                        {totalPages}
-                      </button>
-                    </>
-                  )}
-
                   <button
                     onClick={() => goToPage(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="px-2 py-1 rounded border border-gray-300 text-gray-700 disabled:opacity-50"
+                    className={`${
+                      currentPage === totalPages
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-white text-gray-700 hover:bg-gray-50"
+                    } ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md`}
                   >
-                    <ChevronRight size={16} />
+                    Next
                   </button>
+                </div>
+                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm text-gray-700">
+                      Showing{" "}
+                      <span className="font-medium">
+                        {Math.min(
+                          (currentPage - 1) * itemsPerPage + 1,
+                          totalItems
+                        )}
+                      </span>{" "}
+                      to{" "}
+                      <span className="font-medium">
+                        {Math.min(currentPage * itemsPerPage, totalItems)}
+                      </span>{" "}
+                      of <span className="font-medium">{totalItems}</span>{" "}
+                      results
+                    </p>
+                  </div>
+                  <div>
+                    <nav
+                      className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+                      aria-label="Pagination"
+                    >
+                      <button
+                        onClick={() => goToPage(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className={`${
+                          currentPage === 1
+                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                            : "bg-white text-gray-500 hover:bg-gray-50"
+                        } relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 text-sm font-medium`}
+                      >
+                        <span className="sr-only">Previous</span>
+                        <ChevronLeft className="h-5 w-5" />
+                      </button>
+                      {[...Array(totalPages)].map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => goToPage(index + 1)}
+                          className={`${
+                            currentPage === index + 1
+                              ? "bg-blue-50 border-blue-500 text-blue-600 z-10"
+                              : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+                          } relative inline-flex items-center px-4 py-2 border text-sm font-medium`}
+                        >
+                          {index + 1}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => goToPage(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className={`${
+                          currentPage === totalPages
+                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                            : "bg-white text-gray-500 hover:bg-gray-50"
+                        } relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 text-sm font-medium`}
+                      >
+                        <span className="sr-only">Next</span>
+                        <ChevronRight className="h-5 w-5" />
+                      </button>
+                    </nav>
+                  </div>
                 </div>
               </div>
             )}

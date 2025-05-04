@@ -221,7 +221,7 @@ export default function ManualAttendancePage() {
     if (selectedLecture) {
       setSelectedLecture(null);
     } else {
-      router.push("/take-attendance");
+      router.push("/attendance/take");
     }
   };
 
