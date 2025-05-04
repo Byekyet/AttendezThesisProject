@@ -45,8 +45,8 @@ const mockCourses = [
 // Mock data - Students
 const mockStudents = [
   {
-    name: "Emma Johnson",
-    email: "emma.johnson@example.com",
+    name: "Byekyet",
+    email: "student@example.com",
     profileImage: "https://randomuser.me/api/portraits/women/1.jpg",
   },
   {
